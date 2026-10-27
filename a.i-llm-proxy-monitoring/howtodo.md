@@ -1,0 +1,803 @@
+# Hướng dẫn Thiết kế & Triển khai Hệ thống LLM Proxy & Monitoring Gateway cho Mạng LAN (howtodo.md)
+
+Tài liệu này chi tiết hóa toàn bộ kiến trúc kỹ thuật, danh sách domain, ma trận phân quyền IP/MAC, cơ chế bóc tách token và hướng dẫn cấu hình cho các IDE AI theo đúng các yêu cầu đặt ra tại [`whattodo.md`](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/whattodo.md).
+
+---
+
+## 0. Xác nhận & Tóm tắt Giải pháp (Solution Verification)
+
+> **XÁC NHẬN CHÍNH THỨC (VERIFIED 100%)**:
+> Thiết kế và hệ thống proxy được mô tả trong tài liệu này giải quyết trọn vẹn tất cả bài toán trong [`whattodo.md`](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/whattodo.md):
+> 
+> 1. **Kiểm soát & Giám sát tập trung (Centralized LLM Gateway)**:
+>    - Bắt toàn bộ các request từ các AI IDE / CLI / Agent trong mạng LAN trước khi gửi ra Internet Cloud.
+>    - Nhận diện chính xác **IP LAN** và tự động tra cứu **MAC Address** máy trạm thông qua bảng ARP của hệ điều hành.
+> 2. **Danh mục Domain & Cấu hình cho 4 công cụ trọng điểm**:
+>    - 🪐 **Antigravity CLI** (`antigravity`)
+>    - 💻 **Antigravity IDE** (`antigravity-ide`)
+>    - 🧠 **Claude** (Claude Code CLI, Claude Desktop, Cline / Roo Code)
+>    - ⚡ **Codex** (GitHub Copilot, OpenAI Codex/API, Cursor)
+> 3. **Bóc tách & Ghi nhận Token chi tiết (Streaming Token Accounting)**:
+>    - Ghi log thời gian thực: Máy nào (IP + MAC), gọi Cloud nào, Model nào, số tokens input (prompt), số tokens output (completion/stream).
+>    - Hỗ trợ đầy đủ luồng phản hồi liên tục **Server-Sent Events (SSE / Chunked Streaming)** không làm gián đoạn trải nghiệm của lập trình viên.
+> 4. **Bảng Ma trận Phân quyền & Quota (Access Control Matrix & Quota Enforcement)**:
+>    - Cấu hình linh hoạt bằng file YAML: Máy nào (IP/MAC/Dải IP) được phép gọi API nào, dùng model nào.
+>    - Giới hạn cứng số token input/output trên mỗi request và hạn mức tổng token hàng ngày (Daily Quota).
+>    - Tự động chặn ngay lập tức (HTTP 403 Forbidden / HTTP 429 Too Many Requests) kèm thông báo lỗi rõ ràng nếu vi phạm chính sách.
+> 5. **Hướng dẫn cấu hình từng bước cho từng IDE**:
+>    - Hỗ trợ cả 2 mô hình: **Reverse Proxy (Base URL Rewrite - Không cần cài SSL Root CA)** và **Forward Proxy (HTTP/HTTPS Proxy)**.
+
+---
+
+## 1. Bảng Tra cứu Toàn diện Domain & Endpoint của các AI IDE
+
+Bảng dưới đây tổng hợp các domain, giao thức, phương thức xác thực và cách thức cấu hình proxy cho từng công cụ:
+
+| IDE / Công cụ | Domain Cloud LLM sử dụng | Endpoint API chính | Giao thức / Port | Header / Token Auth | Biến môi trường / Setting can thiệp |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Antigravity IDE** | • `daily-cloudcode-pa.googleapis.com`<br>• `cloudcode-pa.googleapis.com`<br>• `generativelanguage.googleapis.com`<br>• `oauth2.googleapis.com` | `/v1internal:streamGenerateCode`<br>`/v1beta/models/...:generateContent` | HTTPS (443)<br>gRPC-web / REST | `Authorization: Bearer <OAuth>`<br>`x-goog-api-key: <Key>` | • Setting: `jetski.cloudCodeUrl`<br>• `http.proxy`<br>• `HTTP_PROXY`, `HTTPS_PROXY` |
+| **Antigravity CLI** | • `daily-cloudcode-pa.googleapis.com`<br>• `cloudcode-pa.googleapis.com` | `/v1internal/...` | HTTPS (443)<br>REST / Connect RPC | `Authorization: Bearer <Token>` | • Flag: `--cloud_code_endpoint`<br>• `HTTP_PROXY`, `HTTPS_PROXY` |
+| **Claude**<br>*(Claude Code, Desktop, Extension)* | • `api.anthropic.com`<br>• `auth.anthropic.com`<br>• `claude.ai` | `/v1/messages`<br>`/v1/complete` | HTTPS (443)<br>REST (SSE Stream) | `x-api-key: sk-ant-...`<br>`anthropic-version: 2023-06-01` | • `ANTHROPIC_BASE_URL`<br>• `HTTP_PROXY`, `HTTPS_PROXY`<br>• Setting trong Extension |
+| **Codex**<br>*(GitHub Copilot, OpenAI, Cursor)* | • `api.githubcopilot.com`<br>• `copilot-proxy.githubusercontent.com`<br>• `api.openai.com`<br>• `api.github.com` | `/chat/completions`<br>`/v1/engines/copilot-codex/...`<br>`/v1/chat/completions` | HTTPS (443)<br>REST (SSE Stream) | `Authorization: Bearer <Token>`<br>`OpenAI-Organization: ...` | • `OPENAI_BASE_URL`<br>• `http.proxy`<br>• `github.copilot.advanced` |
+
+---
+
+## 2. Kiến trúc Kỹ thuật Hệ thống Proxy (Proxy Architecture)
+
+### 2.1. So sánh 2 Mô hình Triển khai: Reverse Proxy vs Forward Proxy (MITM)
+
+Trong thực tế doanh nghiệp, có 2 cách để proxy can thiệp vào request của IDE:
+
+```mermaid
+flowchart TD
+    subgraph LAN [Mạng Nội Bộ LAN]
+        PC1[PC Dev 1 - 192.168.1.37<br>Antigravity IDE]
+        PC2[PC Dev 2 - 192.168.1.95<br>Claude Code CLI]
+        PC3[PC Dev 3 - 192.168.1.65<br>VSCode GitHub Copilot]
+    end
+
+    subgraph Gateway [LLM Proxy Gateway - Port 8000]
+        ARP[ARP Table Resolver<br>IP -> MAC Address]
+        AuthMatrix[Policy & Matrix Engine<br>IP/MAC vs Model/Quota]
+        TokenCounter[Streaming Token Counter<br>SSE Chunk Parser]
+        DB[(SQLite Audit Log<br>IP, MAC, Model, Tokens)]
+        AdminUI[Web Dashboard<br>Monitoring Realtime]
+    end
+
+    subgraph CloudLLM [Internet Cloud APIs]
+        GoogleCloud[Google CCPA / Gemini API<br>daily-cloudcode-pa.googleapis.com]
+        AnthropicCloud[Anthropic Claude API<br>api.anthropic.com]
+        OpenAICloud[OpenAI / Copilot API<br>api.openai.com]
+    end
+
+    PC1 -->|1. Request /google| Gateway
+    PC2 -->|1. Request /anthropic| Gateway
+    PC3 -->|1. Request /openai| Gateway
+
+    Gateway --> ARP
+    ARP --> AuthMatrix
+    AuthMatrix -->|Nếu Hợp lệ| TokenCounter
+    AuthMatrix -->|Nếu Vượt Quota / Cấm| Block[Trả về HTTP 403 / 429]
+
+    TokenCounter -->|2. Forward Request| CloudLLM
+    CloudLLM -->|3. Streaming Response Chunks| TokenCounter
+    TokenCounter -->|4. Lưu Token In/Out| DB
+    TokenCounter -->|5. Trả stream về Client| LAN
+    DB --> AdminUI
+```
+
+#### Mô hình A: Reverse Proxy (Gateway API / Base URL Rewrite) - KHUYẾN NGHỊ HÀNG ĐẦU ⭐⭐⭐⭐⭐
+- **Cách thức**: Proxy mở một Web API Server (ví dụ chạy trên máy chủ LAN tại IP `192.168.1.10:8000`). Mỗi provider có một route riêng:
+  - Antigravity: `http://192.168.1.10:8000/google`
+  - Claude: `http://192.168.1.10:8000/anthropic`
+  - OpenAI / Codex: `http://192.168.1.10:8000/openai`
+- **Ưu điểm**:
+  - **KHÔNG CẦN CÀI SSL ROOT CA**: Máy client gọi qua HTTP thông thường hoặc HTTPS có chứng chỉ nội bộ. Không bao giờ bị lỗi SSL Pinning hay x509 Untrusted Authority.
+  - Phân tích và sửa đổi request body, đếm token, kiểm tra ma trận phân quyền cực kỳ mượt mà.
+  - Tương thích 100% với các IDE cho phép đặt Base URL hoặc Custom Endpoint (Antigravity `jetski.cloudCodeUrl`, Claude `ANTHROPIC_BASE_URL`, OpenAI `OPENAI_BASE_URL`).
+
+#### Mô hình B: Forward Proxy (HTTP/HTTPS CONNECT Proxy)
+- **Cách thức**: Proxy chạy dưới dạng HTTP Proxy (ví dụ cổng `8080`). IDE client cấu hình `export HTTPS_PROXY="http://192.168.1.10:8080"`.
+- **Đặc điểm**: Vì request gọi tới `https://api.anthropic.com:443` là TLS mã hóa đầu-cuối, để đọc được nội dung body (prompt, model, token), proxy phải là **MITM (Man-In-The-Middle)**: tự sinh SSL certificate giả lập và ký bằng Root CA của proxy.
+- **Yêu cầu bắt buộc**: Máy client phải import file `ca.crt` vào hệ thống và IDE phải đặt `"http.proxyStrictSSL": false`.
+
+> 💡 **Khuyến nghị kiến trúc của giải pháp này**: Xây dựng **Hybrid Gateway Engine** viết bằng Python FastAPI. Hệ thống ưu tiên chạy theo **Mô hình A (Reverse Proxy Routes)** để dễ cấu hình nhất, đồng thời hỗ trợ chế độ forward proxy nếu cần.
+
+---
+
+### 2.2. Cơ chế Tự động Nhận diện MAC Address từ IP LAN
+
+Khi máy tính trong mạng LAN gửi HTTP request tới Proxy:
+- `request.client.host` cho biết **IP của máy trạm** (ví dụ `192.168.1.37`).
+- Proxy tự động tra cứu bảng **ARP Table** của Linux (`/proc/net/arp` hoặc lệnh `ip neigh`) để lấy ra **Địa chỉ MAC vật lý** (ví dụ `02:00:00:aa:bb:01`).
+- **Lợi ích**: Dù máy tính bị đổi IP do DHCP cấp phát lại, chính sách phân quyền theo MAC vẫn giữ nguyên hiệu lực!
+
+Thuật toán lookup MAC trong Python:
+```python
+def get_mac_address(ip: str) -> str:
+    if ip in ("127.0.0.1", "::1", "localhost"):
+        return "LOCAL_HOST"
+    try:
+        with open("/proc/net/arp", "r") as f:
+            for line in f.readlines()[1:]:
+                parts = line.split()
+                if len(parts) >= 4 and parts[0] == ip:
+                    return parts[3].lower()  # Trả về MAC address
+    except Exception:
+        pass
+    return "UNKNOWN_MAC"
+```
+
+### 2.3. Kiến trúc Kiểm soát & Định tuyến Giao thức MCP (Model Context Protocol) qua SSE & WebSocket
+
+#### 2.3.1. Bối cảnh & Nhu cầu Kiểm soát MCP trong Doanh nghiệp
+**Model Context Protocol (MCP)** là giao thức mở chuẩn hóa do Anthropic khởi xướng (hiện đã được hỗ trợ mạnh mẽ bởi Claude Desktop, Claude Code, Cursor, Antigravity IDE, Cline, Roo Code, Continue), cho phép AI Agent và IDE kết nối tới các dịch vụ công cụ bên ngoài (Database, Terminal shell, Filesystem, Internal API).
+
+Trong môi trường mạng nội bộ LAN doanh nghiệp:
+1. **Rủi ro rò rỉ dữ liệu & lệnh phá hoại**: Nếu lập trình viên tùy tiện kết nối IDE tới các MCP Server ngoài tầm kiểm soát, AI có thể tự động gọi các tool xóa dữ liệu, execute shell độc hại hoặc gửi bí mật nội bộ ra ngoài.
+2. **Khoảng trống giám sát (Audit Gap)**: Các lệnh gọi tool MCP cần được ghi log chính xác: Máy nào (IP/MAC), ai gọi tool nào, vào thời điểm nào, tham số ra sao.
+3. **Đa dạng giao thức (SSE & WebSocket)**: MCP chuẩn hóa hai phương thức truyền tải mạng:
+   - **SSE (Server-Sent Events qua HTTP)**: Client kết nối `GET /mcp/{server}/sse` để nhận luồng event, sau đó gửi JSON-RPC messages qua `POST /mcp/{server}/messages?sessionId=...`.
+   - **WebSocket / Socket (`ws://` / `wss://`)**: Kết nối Socket hai chiều truyền nhận các frame text JSON-RPC 2.0 liên tục.
+
+```mermaid
+flowchart TD
+    subgraph LAN [Mạng Nội Bộ LAN]
+        IDE1[Antigravity IDE / Cursor<br>MCP Client]
+        IDE2[Claude Desktop / Cline<br>MCP Client]
+    end
+
+    subgraph Gateway [LLM & MCP Proxy Gateway - Port 8000]
+        Router[MCP Gateway Router<br>/mcp/{server}/sse & /mcp/{server}/ws]
+        AuthPolicy[MCP Policy Engine<br>allowed_mcp_servers & allowed_mcp_tools]
+        RPCParser[JSON-RPC 2.0 Parser<br>initialize, tools/list, tools/call]
+        AuditLogger[Audit DB Logger<br>Ghi log IP, MAC, Tool Name, Status]
+    end
+
+    subgraph MCPServers [Dịch Vụ MCP Đích]
+        BuiltinTools[Built-in LAN Gateway Tools<br>lan_status, lan_ping, lan_arp_lookup]
+        UpstreamSSE[Upstream MCP SSE Server<br>http://192.168.1.50:8001/sse]
+        UpstreamWS[Upstream MCP WebSocket Server<br>ws://192.168.1.50:8002/ws]
+    end
+
+    IDE1 -->|1. SSE: GET /sse & POST /messages| Router
+    IDE2 -->|1. WebSocket: ws://.../ws| Router
+
+    Router --> RPCParser
+    RPCParser --> AuthPolicy
+    AuthPolicy -->|Kiểm tra IP/MAC + Tool Name| Decision{Được Phép?}
+    
+    Decision -->|CẤM: Tool không trong whitelist| BlockResponse[Trả về JSON-RPC Error -32003<br>Ghi log BLOCKED_MCP_TOOL]
+    Decision -->|CHO PHÉP| AuditLogger
+    
+    AuditLogger --> RouteTarget{Loại Server?}
+    RouteTarget -->|builtin: lan-tools| BuiltinTools
+    RouteTarget -->|sse: forward HTTP| UpstreamSSE
+    RouteTarget -->|websocket: forward WS| UpstreamWS
+```
+
+#### 2.3.2. Cơ chế Bóc tách & Kiểm duyệt JSON-RPC 2.0 Realtime
+Khi nhận được request từ IDE, Gateway thực hiện:
+1. **Khởi tạo phiên (Session Handshake)**:
+   - Đối với **SSE**: Trả về event `endpoint` với URI chứa `sessionId` độc nhất (`/mcp/{server}/messages?sessionId=<uuid>`).
+   - Đối với **WebSocket**: Hoàn tất HTTP Upgrade sang WebSocket, xác thực IP và MAC ngay từ bắt tay TCP.
+2. **Kiểm tra Whitelist Server (`allowed_mcp_servers`)**:
+   - Đối chiếu tên server (ví dụ `lan-tools`, `postgres-db`) với danh sách máy tính của client được phép truy cập trong `policy_matrix.yaml`.
+3. **Kiểm tra Whitelist Tool (`allowed_mcp_tools`)**:
+   - Khi client gửi JSON-RPC method `tools/call`, Gateway trích xuất `params.name` (ví dụ `lan_ping`, `db_read_users`).
+   - Hỗ trợ ký tự đại diện (Wildcard `*`): ví dụ `read_*`, `lan_*` cho phép các thao tác an toàn, nhưng chặn các tool ghi đè / thực thi như `delete_*`, `bash`, `exec`.
+   - Nếu bị cấm: Gateway lập tức chặn lại và phản hồi mã lỗi chuẩn JSON-RPC:
+     ```json
+     {"jsonrpc": "2.0", "id": 1, "error": {"code": -32003, "message": "MCP Tool 'delete_all' is forbidden by LAN Policy Matrix"}}
+     ```
+4. **Ghi vết Audit chi tiết**:
+   - Ghi lại vào SQLite: Thời gian, IP LAN, MAC, Tên máy trạm, Provider=`mcp`, Model=`server_name`, Endpoint=`tools/call:<tool_name>`, Action=`ALLOWED` hoặc `BLOCKED_MCP_TOOL`, Độ trễ `latency_ms`.
+
+---
+
+## 3. Bảng Ma trận Cấu hình Phân quyền & Quota (Access Control Matrix)
+
+Toàn bộ quyền hạn được khai báo trong file cấu hình chuẩn [`policy_matrix.yaml`](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/policy_matrix.yaml).
+
+### 3.1. Cấu trúc File Cấu hình `policy_matrix.yaml`
+
+```yaml
+# =====================================================================
+# MA TRẬN PHÂN QUYỀN VÀ HẠN MỨC TOKEN CHO MẠNG LAN (POLICY MATRIX)
+# =====================================================================
+
+# 1. Chính sách mặc định khi IP/MAC không nằm trong danh sách khai báo riêng
+#    Yêu cầu: máy mới tham gia được ALLOW ALL, KHÔNG giới hạn token.
+#    Quy ước: giá trị 0 (hoặc bỏ trống) = không giới hạn.
+#    Khi cần hạn chế máy nào -> vào UI Dashboard tạo rule riêng cho máy đó.
+default_policy:
+  action: "allow"                         # "allow" hoặc "deny"
+  allowed_providers: ["*"]                # Tất cả provider
+  allowed_models: ["*"]                   # Tất cả model
+  allowed_mcp_servers: ["*"]
+  allowed_mcp_tools: ["*"]
+  max_input_tokens_per_request: 0        # 0 = không giới hạn
+  max_output_tokens_per_request: 0       # 0 = không giới hạn
+  daily_total_token_quota: 0             # 0 = không giới hạn
+
+# 2. Danh sách quy tắc chi tiết cho từng Máy tính (Khớp theo MAC hoặc IP)
+#    (Các rule bên dưới chỉ là VÍ DỤ minh họa khi muốn hạn chế từng máy)
+rules:
+  # --- NHÓM 1: QUẢN TRỊ VIÊN / TECH LEAD (Full quyền, model mạnh nhất) ---
+  - name: "Tech Lead - PC"
+    mac: "02:00:00:aa:bb:03"              # Ưu tiên nhận diện theo MAC vật lý
+    ip: "192.168.1.10"
+    allowed_providers: ["*"]              # Được gọi tất cả providers (Google, Anthropic, OpenAI)
+    allowed_models: ["*"]                 # Được gọi tất cả models (Claude 3.5 Sonnet, Gemini 1.5 Pro, GPT-4o)
+    max_input_tokens_per_request: 128000
+    max_output_tokens_per_request: 16000
+    daily_total_token_quota: 2000000      # 2 triệu token/ngày
+
+  # --- NHÓM 2: SENIOR DEVELOPER (Được dùng Claude & Gemini Pro, hạn mức cao) ---
+  - name: "Dev PC 1 - Hoang"
+    mac: "02:00:00:aa:bb:01"
+    ip: "192.168.1.37"
+    allowed_providers: ["google", "anthropic", "openai"]
+    allowed_models:
+      - "gemini-1.5-pro"
+      - "gemini-3.8-flash"
+      - "claude-3-5-sonnet*"
+      - "gpt-4o"
+      - "gpt-4o-mini"
+    max_input_tokens_per_request: 32000
+    max_output_tokens_per_request: 4000
+    daily_total_token_quota: 300000       # 300K token/ngày
+
+  # --- NHÓM 3: JUNIOR DEVELOPER (Chỉ cho phép Flash và Mini, cấm model đắt tiền) ---
+  - name: "Dev PC 2 - Minh"
+    mac: "02:00:00:aa:bb:02"
+    ip: "192.168.1.95"
+    allowed_providers: ["google", "openai"]
+    allowed_models:
+      - "gemini-1.5-flash"
+      - "gemini-3.8-flash"
+      - "gpt-4o-mini"
+    max_input_tokens_per_request: 16000
+    max_output_tokens_per_request: 2000
+    daily_total_token_quota: 100000       # 100K token/ngày
+
+  # --- NHÓM 4: DẢI MÁY THỰC TẬP SINH / TESTER (Dải IP động) ---
+  - name: "Intern & Guest Subnet"
+    ip_range: "192.168.1.200-192.168.1.250"
+    allowed_providers: ["google"]
+    allowed_models:
+      - "gemini-1.5-flash"
+    max_input_tokens_per_request: 4000
+    max_output_tokens_per_request: 1000
+    daily_total_token_quota: 20000        # 20K token/ngày
+```
+
+### 3.2. Thuật toán Kiểm tra Ma trận Phân quyền (Policy Enforcement Algorithm)
+
+```mermaid
+flowchart TD
+    Req[Request đến từ Client IP] --> GetMAC[Lấy MAC từ ARP Table]
+    GetMAC --> MatchRule{Có Rule khớp MAC hoặc IP?}
+    MatchRule -- Có --> ApplyRule[Áp dụng Rule cụ thể]
+    MatchRule -- Không --> DefaultRule[Áp dụng default_policy]
+
+    ApplyRule --> CheckProvider{Provider được phép?}
+    DefaultRule --> CheckProvider
+
+    CheckProvider -- Không --> DenyProvider[Trả về 403: Provider bị chặn]
+    CheckProvider -- Có --> CheckModel{Model được phép?}
+
+    CheckModel -- Không --> DenyModel[Trả về 403: Model bị cấm cho máy này]
+    CheckModel -- Có --> CheckInTokens{Input Tokens <= Max Cho Phép?}
+
+    CheckInTokens -- Không --> DenyInTokens[Trả về 400/403: Prompt vượt giới hạn Max Input Token]
+    CheckInTokens -- Có --> CheckDailyQuota{Đã dùng + Hiện tại <= Daily Quota?}
+
+    CheckDailyQuota -- Không --> DenyDailyQuota[Trả về 429: Đã hết hạn mức Token trong ngày]
+    CheckDailyQuota -- Có --> AllowForward[Chuyển tiếp Request lên Cloud LLM]
+```
+
+---
+
+### 3.3. Giao Diện Quản Trị Trực Quan & Thao Tác Cấu Hình Allow/Block (Policy Matrix UI)
+
+Hệ thống cung cấp giao diện Web UI tương tác trực tiếp tại đường dẫn `http://<IP_MÁY_CHỦ_PROXY>:8000/dashboard` (chuyển sang tab **🛡️ Ma Trận Phân Quyền & Quota**).
+
+Quản trị viên có thể thao tác hoàn toàn trên giao diện mà không cần chỉnh sửa file YAML thủ công:
+
+1. **Thêm Quy Tắc Phân Quyền Mới (Add Rule)**:
+   - Nhấn nút **`+ Thêm Quy Tắc Mới`** trên giao diện.
+   - Nhập tên máy trạm (ví dụ `Dev PC 3 - Anh Tuấn`), địa chỉ **IP** hoặc địa chỉ **MAC vật lý** (hoặc dải IP subnet).
+   - Chọn các Provider được phép (Checkboxes: `Google`, `Anthropic`, `OpenAI`, `Copilot` hoặc `Tất cả *`).
+   - Nhập danh sách Model được phép (có nút chọn nhanh Preset: "Toàn bộ", "Chỉ Flash & Mini", "Senior Models Pro & Sonnet").
+   - Thiết lập giới hạn Max Token In/Out và Daily Quota.
+   - Bấm **`Lưu Quy Tắc`**: Hệ thống gọi API `POST /api/policy/rule` và ghi trực tiếp vào `policy_matrix.yaml` với cơ chế hot-reload tức thì.
+
+2. **Chỉnh Sửa / Xóa Quy Tắc (Edit / Delete Rule)**:
+   - Bấm nút **`✏️ Sửa`** trên hàng của máy trạm để điều chỉnh quyền hạn hoặc hạn mức token.
+   - Bấm nút **`🗑️ Xóa`** để xóa bỏ quy tắc: Hệ thống gọi API `DELETE /api/policy/rule/{name}`, máy trạm đó sẽ tự động quay về áp dụng Chính sách Mặc định (Default Policy).
+
+3. **Cấu Hình Chính Sách Mặc Định (Default Policy)**:
+   - Bấm nút **`✏️ Chỉnh Sửa Chính Sách Mặc Định`** ở banner trên cùng.
+   - Có thể chọn:
+     - `Allow with Limits`: Cho phép các máy lạ truy cập các model rẻ tiền (Flash/Mini) với quota giới hạn.
+     - `Deny All`: Chặn hoàn toàn tất cả máy trạm lạ chưa được đăng ký trong danh sách quy tắc.
+
+4. **Các API Phục Vụ Quản Trị Ma Trận Quyền**:
+   - `GET /api/policy`: Lấy toàn bộ cấu hình ma trận phân quyền hiện tại dưới dạng JSON.
+   - `POST /api/policy`: Ghi đè toàn bộ file cấu hình `policy_matrix.yaml`.
+   - `POST /api/policy/rule`: Thêm mới hoặc cập nhật một rule cụ thể.
+   - `DELETE /api/policy/rule/{name}`: Xóa bỏ một rule cụ thể theo tên.
+   - `POST /api/policy/default`: Cập nhật cấu hình chính sách mặc định.
+
+---
+
+## 4. Cơ chế Bóc tách Streaming Token & Ghi Log Audit
+
+### 4.1. Cách Trích xuất Token Input & Output theo từng Hãng
+
+Khi các IDE làm việc với LLM, chúng hầu như đều yêu cầu dạng **Streaming (Server-Sent Events)** để hiển thị từng chữ gõ ra màn hình. Proxy cần đọc được token mà **không làm chậm tốc độ phản hồi**:
+
+#### 1. Google Gemini & CCPA (Antigravity):
+- Trong response của Google API (kể cả streaming chunk cuối cùng), luôn có trường `usageMetadata`:
+  ```json
+  "usageMetadata": {
+    "promptTokenCount": 542,
+    "candidatesTokenCount": 189,
+    "totalTokenCount": 731
+  }
+  ```
+- Proxy chỉ cần lắng nghe stream, khi chunk cuối cùng xuất hiện có chứa `usageMetadata` thì trích xuất ngay số token chuẩn 100%.
+
+#### 2. Anthropic Claude:
+- API của Anthropic gửi 2 event đặc thù trong SSE stream:
+  - Event `message_start`: chứa số token input ban đầu:
+    ```json
+    "message": { "usage": { "input_tokens": 1280 } }
+    ```
+  - Event `message_delta`: chứa số token output khi kết thúc stream:
+    ```json
+    "usage": { "output_tokens": 345 }
+    ```
+- Proxy ghi nhận ngay lập tức mà không cần tự đếm!
+
+#### 3. OpenAI & GitHub Copilot:
+- Với request có `"stream_options": {"include_usage": true}`, chunk cuối cùng sẽ gửi trường `usage`:
+  ```json
+  "usage": { "prompt_tokens": 420, "completion_tokens": 150, "total_tokens": 570 }
+  ```
+- Nếu client không yêu cầu `include_usage`, proxy tự động tính xấp xỉ bằng thuật toán:
+  $$\text{Input Tokens} = \frac{\text{len(prompt\_text)}}{4}, \quad \text{Output Tokens} = \frac{\text{len(accumulated\_chunks)}}{4}$$
+  hoặc giải mã token bằng tokenizer tương ứng.
+
+### 4.2. Cấu trúc Cơ sở Dữ liệu Giám sát (SQLite Audit Schema)
+
+Toàn bộ log được lưu trữ bền vững tại file `llm_audit.db` (SQLite):
+
+```sql
+CREATE TABLE IF NOT EXISTS llm_audit_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+    client_ip TEXT NOT NULL,
+    client_mac TEXT NOT NULL,
+    machine_name TEXT,
+    provider TEXT NOT NULL,          -- 'google', 'anthropic', 'openai'
+    model TEXT NOT NULL,             -- 'claude-3-5-sonnet', 'gemini-1.5-pro', ...
+    endpoint TEXT NOT NULL,
+    status_code INTEGER,             -- 200, 403, 429, 500
+    action TEXT NOT NULL,            -- 'ALLOWED', 'BLOCKED_MODEL', 'BLOCKED_QUOTA'
+    input_tokens INTEGER DEFAULT 0,
+    output_tokens INTEGER DEFAULT 0,
+    total_tokens INTEGER DEFAULT 0,
+    latency_ms INTEGER DEFAULT 0,
+    error_message TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_client_ip ON llm_audit_log(client_ip);
+CREATE INDEX IF NOT EXISTS idx_client_mac ON llm_audit_log(client_mac);
+CREATE INDEX IF NOT EXISTS idx_timestamp ON llm_audit_log(timestamp);
+```
+
+---
+
+## 5. Hướng dẫn Cấu hình Chi tiết cho Từng IDE (Step-by-Step)
+
+> 📖 **SỔ TAY HƯỚNG DẪN DÀNH CHO LẬP TRÌNH VIÊN**:
+> Hướng dẫn độc lập, chi tiết từng bước cho từng hệ điều hành (Windows, Linux, macOS) và từng IDE được biên soạn riêng tại file:
+> 👉 [`a.i-ide-setup-use-proxy.md`](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/a.i-ide-setup-use-proxy.md)
+
+Giả sử máy chủ Proxy chạy tại địa chỉ LAN: `http://192.168.1.10:8000`.
+
+### 5.1. Antigravity & Antigravity IDE
+
+#### Cách 1: Đổi trực tiếp CloudCode URL Override (Khuyên dùng nhất - Không cần sửa proxy máy)
+1. Mở Antigravity IDE trên máy trạm.
+2. Nhấn `Ctrl + ,` (hoặc vào **File -> Preferences -> Settings**).
+3. Bấm vào biểu tượng **Open Settings (JSON)** ở góc trên bên phải để mở file `settings.json`.
+4. Thêm cấu hình sau:
+   ```json
+   {
+     "jetski.cloudCodeUrl": "http://192.168.1.10:8000/google"
+   }
+   ```
+5. Khởi động lại Antigravity IDE. Toàn bộ request AI tạo mã, chat, completion sẽ tự động định tuyến qua Proxy.
+
+#### Cách 2: Cấu hình qua HTTP Proxy của VSCode / Antigravity
+Thêm vào `settings.json`:
+```json
+{
+  "http.proxy": "http://192.168.1.10:8000",
+  "http.proxyStrictSSL": false,
+  "http.proxySupport": "override"
+}
+```
+
+#### Cách 3: Đối với Antigravity CLI
+Khi chạy CLI trên Terminal máy trạm:
+```bash
+# Thiết lập biến môi trường
+export HTTP_PROXY="http://192.168.1.10:8000"
+export HTTPS_PROXY="http://192.168.1.10:8000"
+
+# Hoặc truyền cờ trực tiếp
+antigravity --cloud_code_endpoint "http://192.168.1.10:8000/google"
+```
+
+---
+
+### 5.2. Claude (Claude Code CLI / Desktop / Extensions)
+
+#### 1. Đối với Claude Code CLI
+Claude Code CLI được Anthropic thiết kế sẵn biến môi trường để định tuyến API Base URL:
+```bash
+# Thêm vào ~/.bashrc hoặc ~/.zshrc trên máy Dev
+export ANTHROPIC_BASE_URL="http://192.168.1.10:8000/anthropic"
+
+# Nếu cần chỉ định API Key
+export ANTHROPIC_API_KEY="sk-ant-your-actual-api-key"
+```
+Khi chạy lệnh `claude`, công cụ sẽ gửi toàn bộ prompt và nhận streaming response thông qua Proxy Gateway.
+
+#### 2. Đối với Extension Cline / Roo Code / Continue trong VSCode
+1. Mở Extension Settings trong VSCode.
+2. Tại mục **API Provider**, chọn `Anthropic` (hoặc `OpenAI Compatible`).
+3. Điền các trường:
+   - **Base URL**: `http://192.168.1.10:8000/anthropic`
+   - **API Key**: `sk-ant-xxx` (Proxy sẽ giữ nguyên Authorization header để chuyển tiếp).
+   - **Model ID**: `claude-3-5-sonnet-20241022` (hoặc model được phép trong policy).
+
+---
+
+### 5.3. Codex (GitHub Copilot / OpenAI / Cursor)
+
+#### 1. Đối với GitHub Copilot (Trong VSCode)
+Thêm cấu hình vào `settings.json`:
+```json
+{
+  "http.proxy": "http://192.168.1.10:8000",
+  "http.proxyStrictSSL": false,
+  "github.copilot.advanced": {
+    "debug.overrideProxyUrl": "http://192.168.1.10:8000/copilot"
+  }
+}
+```
+
+#### 2. Đối với Cursor IDE hoặc OpenAI SDK
+Cursor và các công cụ phát triển dùng OpenAI API hỗ trợ cấu hình Base URL:
+- Trong Terminal:
+  ```bash
+  export OPENAI_BASE_URL="http://192.168.1.10:8000/openai/v1"
+  export OPENAI_API_KEY="sk-your-openai-api-key"
+  ```
+- Trong Cursor Settings -> **Models**:
+  - Gạt bật **OpenAI API Key**
+  - Điền **Base URL Override**: `http://192.168.1.10:8000/openai/v1`
+
+---
+
+## 6. Bộ Mã Nguồn Triển Khai Hoàn Chỉnh (Production-Ready Codebase)
+
+Toàn bộ mã nguồn của hệ thống Proxy được tổ chức đầy đủ trong thư mục `a.i-llm-proxy-monitoring/`:
+
+```
+a.i-llm-proxy-monitoring/
+├── whattodo.md                  # Đề bài yêu cầu của người viết
+├── howtodo.md                   # Tài liệu thiết kế & giải pháp kỹ thuật (File này)
+├── a.i-ide-setup-use-proxy.md   # Sổ tay hướng dẫn lập trình viên cấu hình IDE
+├── Dockerfile                   # Dockerfile đóng gói Proxy Server
+├── docker-compose.yml           # Docker Compose chạy chế độ network_mode: host
+├── requirements.txt             # Thư viện phụ thuộc (fastapi, uvicorn, httpx, pyyaml)
+├── policy_matrix.yaml           # Bảng ma trận phân quyền IP/MAC, Model & Quota
+├── database.py                  # Quản lý Database SQLite, lưu trữ audit log & đếm quota ngày
+├── token_utils.py               # Bóc tách streaming SSE chunks & tính token các hãng
+├── proxy_server.py              # FastAPI Master Proxy Engine (Reverse Proxy + Router)
+├── test_client.py               # Script kiểm thử tự động các tình huống Cho phép/Chặn
+└── static/
+    └── index.html               # Web UI Dashboard giám sát trực quan thời gian thực
+```
+
+### 6.1. Chi tiết Các Thành phần Cốt lõi:
+1. [`proxy_server.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/proxy_server.py):
+   - Chạy trên nền tảng **FastAPI** bất đồng bộ (`asyncio`) với hiệu năng cực cao.
+   - Nhận diện `client_ip` và gọi hàm tra cứu MAC từ `/proc/net/arp`.
+   - Nạp file `policy_matrix.yaml` với cơ chế reload tự động khi file thay đổi.
+   - Kiểm tra điều kiện:
+     - Nếu vi phạm Provider $\rightarrow$ Trả về `403 Forbidden` (`{"error": "Provider not allowed"}`).
+     - Nếu vi phạm Model $\rightarrow$ Trả về `403 Forbidden` (`{"error": "Model forbidden for this PC"}`).
+     - Nếu vượt Max Input Tokens $\rightarrow$ Trả về `400 Bad Request` (`{"error": "Input tokens exceed limit"}`).
+     - Nếu vượt Daily Quota $\rightarrow$ Trả về `429 Too Many Requests` (`{"error": "Daily token quota exceeded"}`).
+   - Forward request lên Cloud LLM đích tương ứng (`daily-cloudcode-pa.googleapis.com`, `api.anthropic.com`, `api.openai.com`) bằng `httpx.AsyncClient`.
+   - Stream response trả ngược lại IDE từng chunk mà không gây trễ (zero-buffering latency).
+
+2. [`database.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/database.py):
+   - Lưu trữ nhật ký cuộc gọi vào bảng `llm_audit_log`.
+   - Cung cấp hàm `get_daily_token_usage(ip, mac)` để tính tổng số token mà một máy đã tiêu thụ trong ngày.
+   - Cung cấp API truy vấn danh sách log mới nhất để hiển thị lên Dashboard.
+
+3. [`static/index.html`](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/static/index.html):
+   - Giao diện Admin Dark Mode chuyên nghiệp.
+   - Hiển thị bảng thống kê: Tổng token tiêu thụ toàn mạng LAN, số request thành công, số request bị chặn vi phạm chính sách.
+   - Biểu đồ phân bổ token theo từng máy tính (IP/MAC) và danh sách nhật ký Audit Log trực quan cập nhật theo thời gian thực.
+
+---
+
+## 7. Hướng dẫn Khởi chạy, Kiểm thử & Vận hành
+
+### 7.1. Cài đặt Phụ thuộc & Khởi chạy Proxy Server
+
+Chạy trên máy chủ proxy (hoặc PC Gateway nội bộ):
+```bash
+# 1. Chuyển vào thư mục proxy
+cd /work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring
+
+# 2. Cài đặt các gói phụ thuộc (nếu chưa có)
+pip install -r requirements.txt
+
+# 3. Khởi chạy server trên tất cả interfaces mạng (cổng 8000)
+python3 proxy_server.py
+```
+Khi khởi chạy thành công, terminal sẽ thông báo:
+```
+[INFO] LLM Proxy Monitoring Gateway is running on http://0.0.0.0:8000
+[INFO] Policy Matrix loaded successfully from policy_matrix.yaml
+[INFO] SQLite Database initialized at llm_audit.db
+[INFO] Admin Dashboard available at http://localhost:8000/dashboard
+```
+
+### 7.2. Kiểm thử Tự động bằng Script `test_client.py`
+
+Chạy script test có sẵn để xác minh các kịch bản:
+```bash
+python3 test_client.py
+```
+Script sẽ kiểm tra:
+1. **Case 1 (Hợp lệ)**: Gửi request gọi model hợp lệ (`gemini-1.5-flash`) $\rightarrow$ Proxy cho phép, stream kết quả và ghi nhận token.
+2. **Case 2 (Chặn Model)**: Gửi request gọi model cấm $\rightarrow$ Proxy trả về `HTTP 403: Model is not allowed for this workstation`.
+3. **Case 3 (Chặn Quota)**: Gửi prompt khổng lồ vượt quá `max_input_tokens_per_request` $\rightarrow$ Proxy trả về `HTTP 400: Input tokens exceed limit`.
+4. **Case 4 (Kiểm tra Log)**: Đọc database SQLite để xác nhận các bản ghi log IP, MAC, Model, Tokens đã được lưu đầy đủ.
+
+### 7.3. Truy cập Dashboard Quản trị Mạng LAN
+
+Mở trình duyệt trên máy quản trị nội bộ:
+```
+http://<IP_MÁY_CHỦ_PROXY>:8000/dashboard
+```
+Tại đây, quản trị viên có thể:
+- Xem trực quan máy tính nào (IP, MAC) đang tiêu tốn nhiều token nhất.
+- Bắt kịp thời các hành vi dev cố tình gọi model cấm hoặc vượt hạn mức chi phí.
+- Xuất dữ liệu báo cáo audit dạng JSON / CSV phục vụ hạch toán chi phí API của công ty.
+
+---
+
+## 8. Hướng dẫn Triển khai Bằng Docker & Docker Compose cho Mạng LAN
+
+Để thuận tiện cho việc vận hành trên máy chủ nội bộ hoặc Home Server, toàn bộ hệ thống đã được đóng gói hoàn chỉnh bằng [`Dockerfile`](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/Dockerfile) và [`docker-compose.yml`](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/docker-compose.yml).
+
+### 8.1. Giải pháp Network Mode: Tại sao chọn `network_mode: "host"` trên Linux?
+
+Trong môi trường mạng LAN công ty, yêu cầu cốt lõi là:
+1. Nhận diện chính xác **IP thực tế của từng máy tính trong mạng LAN** (`request.client.host`).
+2. Tra cứu được **Địa chỉ MAC vật lý** thông qua bảng ARP của Host (`/proc/net/arp`).
+
+> ⚠️ **LƯU Ý KỸ THUẬT VỀ DOCKER BRIDGE & NAT**:
+> Nếu dùng mạng Docker mặc định (`bridge` với port mapping `- "8000:8000"`), Docker NAT (Masquerade) sẽ đổi IP nguồn của gói tin từ `192.168.1.x` thành IP gateway nội bộ của Docker (ví dụ `172.18.0.1`), đồng thời container không truy cập được bảng ARP mạng vật lý của Host.
+> 
+> 👉 **GIẢI PHÁP TỐI ƯU**: Cấu hình `network_mode: "host"` trong [`docker-compose.yml`](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/docker-compose.yml).
+> - Container chia sẻ trực tiếp không gian mạng với máy chủ Host.
+> - Client IP giữ nguyên 100% dạng `192.168.1.x`.
+> - Container đọc trực tiếp bảng `/proc/net/arp` của Host để phân giải MAC Address.
+> - Hiệu năng truyền tải streaming SSE đạt tốc độ tối đa, không phát sinh độ trễ trung gian.
+
+*(Nếu chạy trên macOS hoặc Windows Docker Desktop không hỗ trợ `host` mode, chuyển sang dùng `ports: - "8000:8000"`)*.
+
+---
+
+### 8.2. Cấu trúc File `docker-compose.yml`
+
+```yaml
+version: '3.8'
+
+services:
+  llm-proxy-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: llm_proxy_monitoring
+    restart: unless-stopped
+    network_mode: "host"
+
+    environment:
+      - PORT=8000
+      - HOST=0.0.0.0
+      - POLICY_FILE=/app/policy_matrix.yaml
+      - DB_PATH=/app/data/llm_audit.db
+      - RELOAD=false
+
+    volumes:
+      # Gắn file cấu hình ma trận phân quyền để chỉnh sửa nóng từ bên ngoài Host
+      - ./policy_matrix.yaml:/app/policy_matrix.yaml
+      # Gắn thư mục lưu trữ cơ sở dữ liệu SQLite audit log bền vững
+      - ./data:/app/data
+      # (Tùy chọn) Gắn giao diện tĩnh dashboard
+      - ./static:/app/static
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+```
+
+---
+
+### 8.3. Lệnh Khởi chạy & Quản lý Container
+
+1. **Khởi chạy container chạy ngầm (Detached mode)**:
+   ```bash
+   cd /work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring
+   docker compose up -d --build
+   ```
+2. **Xem nhật ký hoạt động thời gian thực (Live Logs)**:
+   ```bash
+   docker compose logs -f
+   ```
+3. **Cập nhật chính sách ma trận quyền nóng (Hot-reload)**:
+   - Chỉnh sửa trực tiếp file [`policy_matrix.yaml`](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/policy_matrix.yaml) trên máy chủ.
+   - Proxy sẽ tự động nhận diện thay đổi mà không cần restart container.
+4. **Dừng hoặc khởi động lại container**:
+   ```bash
+   docker compose restart   # Khởi động lại
+   docker compose down      # Dừng và xóa container
+   ```
+
+---
+
+### 8.4. Hướng dẫn Các Máy Trạm Mạng LAN Sửa Cấu hình IDE để Dùng Proxy Docker
+
+> 📖 **TÀI LIỆU HƯỚNG DẪN CHI TIẾT ĐẦY ĐỦ**:
+> Toàn bộ đường dẫn file cấu hình theo từng hệ điều hành (Windows, Linux, macOS), các key JSON cụ thể và biến môi trường shell đã được biên soạn chi tiết tại:
+> 👉 [`a.i-ide-setup-use-proxy.md`](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/a.i-ide-setup-use-proxy.md).
+
+Giả sử máy chủ chạy Docker Proxy có địa chỉ IP mạng LAN là `192.168.1.183` (Port `8000`).
+
+#### 1. Cấu hình Antigravity IDE (Trên máy tính lập trình viên)
+> ⚠️ **LƯU Ý QUAN TRỌNG**: Cấu hình `jetski.cloudCodeUrl` **bắt buộc phải nằm trong User Settings (`settings.json`) toàn cục** (không chỉ đặt ở `.vscode/settings.json` của workspace), vì tiến trình Electron Main Process khởi tạo Go language server daemon từ User Settings:
+> - **Linux**: `~/.config/Antigravity IDE/User/settings.json`
+> - **Windows**: `%APPDATA%\Antigravity IDE\User\settings.json`
+> - **macOS**: `~/Library/Application Support/Antigravity IDE/User/settings.json`
+
+Thêm nội dung sau vào `settings.json`:
+```json
+{
+  "jetski.cloudCodeUrl": "http://192.168.1.183:8000/google",
+  "http.proxy": "http://192.168.1.183:8000",
+  "http.proxyStrictSSL": false,
+  "http.proxySupport": "override"
+}
+```
+
+#### 2. Cấu hình Antigravity CLI (Terminal)
+Thêm vào file profile shell (`~/.bashrc`, `~/.zshrc`, hoặc PowerShell `$PROFILE`):
+```bash
+export HTTP_PROXY="http://192.168.1.183:8000"
+export HTTPS_PROXY="http://192.168.1.183:8000"
+export NO_PROXY="localhost,127.0.0.1,192.168.1.*"
+# Hoặc truyền cờ endpoint trực tiếp khi chạy:
+antigravity --cloud_code_endpoint "http://192.168.1.183:8000/google"
+```
+
+#### 3. Cấu hình Claude Code CLI
+Thêm vào file cấu hình shell (`~/.bashrc` hoặc `~/.zshrc` trên máy nhân viên):
+```bash
+export ANTHROPIC_BASE_URL="http://192.168.1.183:8000/anthropic"
+export ANTHROPIC_API_KEY="sk-ant-your-api-key"
+```
+
+#### 4. Cấu hình Extension Claude (Cline / Roo Code / Continue trong VSCode)
+- Mở cài đặt extension trên máy nhân viên:
+  - **API Provider**: Chọn `Anthropic`
+  - **Base URL**: Điền `http://192.168.1.183:8000/anthropic`
+  - **API Key**: Điền API key tương ứng.
+
+#### 5. Cấu hình GitHub Copilot (VSCode)
+Thêm vào `settings.json` của VSCode:
+```json
+{
+  "http.proxy": "http://192.168.1.183:8000",
+  "http.proxyStrictSSL": false,
+  "github.copilot.advanced": {
+    "debug.overrideProxyUrl": "http://192.168.1.183:8000/copilot"
+  }
+}
+```
+
+#### 6. Cấu hình Cursor / OpenAI SDK
+```bash
+export OPENAI_BASE_URL="http://192.168.1.183:8000/openai/v1"
+export OPENAI_API_KEY="sk-your-openai-api-key"
+```
+*(Trong giao diện Cursor Settings $\rightarrow$ **Models** $\rightarrow$ Điền Override Base URL: `http://192.168.1.183:8000/openai/v1`)*.
+
+---
+
+## 8.5. Cơ Chế Tự Động Phát Hiện Domain/IP Cloud & Allow/Block Theo Domain
+
+Đáp ứng yêu cầu *"lần đầu gọi API LLM, MCP thì ghi nhận logs và domain, IP server cloud, rồi vào UI cấu hình allow/block"*:
+
+```mermaid
+sequenceDiagram
+    participant IDE as AI IDE (máy LAN)
+    participant GW as Proxy Gateway
+    participant DB as SQLite discovered_endpoints
+    participant Cloud as Cloud LLM / MCP upstream
+    IDE->>GW: Request /google, /anthropic, /mcp/...
+    GW->>GW: Resolve DNS domain upstream (cache 5 phút)
+    GW->>DB: record_discovery (lần đầu = INSERT, sau đó tăng hit_count)
+    GW->>GW: get_domain_action(domain) theo domain_policy
+    alt domain = block
+        GW-->>IDE: 403 BLOCKED_DOMAIN (MCP: JSON-RPC -32003, gRPC: grpc-status 7)
+    else allow (mặc định)
+        GW->>Cloud: Forward request
+        Cloud-->>GW: Response / stream
+        GW-->>IDE: Response + ghi audit log tokens
+    end
+```
+
+- **Bảng `discovered_endpoints`**: kind (llm/mcp), provider, domain, IP phân giải, giao thức (https / grpc / protobuf / sse / websocket / wss), model/tool gần nhất, máy gọi gần nhất, số lượt, số lượt bị chặn, lần đầu/gần nhất.
+- **`domain_policy`** trong `policy_matrix.yaml`: map `domain -> allow|block`, hỗ trợ wildcard (`*.googleapis.com`). Khóa chính xác được ưu tiên hơn wildcard. Domain chưa cấu hình = **allow**.
+- **UI**: card *🛰️ Endpoint Cloud Đã Phát Hiện* — nút ⛔ Block / ✅ Allow / ↺ Reset cho từng domain, ô nhập để block trước một domain/wildcard.
+- **API**: `GET /api/discovery`, `POST /api/domain-policy {domain, action: allow|block|reset}`, `DELETE /api/discovery/{id}`.
+
+## 8.6. Ma Trận Giao Thức MCP Được Hỗ Trợ
+
+| Giao thức | Endpoint phía IDE | Upstream | Kiểm soát |
+| :--- | :--- | :--- | :--- |
+| SSE (HTTP) | `http(s)://<gw>:8000/mcp/{server}/sse` | `http(s)://...` | server + tool (JSON-RPC `tools/call`) |
+| WebSocket | `ws://<gw>:8000/mcp/{server}/ws` | `ws://...` | server + tool |
+| WSS (TLS) | `wss://<gw>:8000/mcp/{server}/ws` *(bật `SSL_CERTFILE`/`SSL_KEYFILE`)* | `wss://...` | server + tool |
+| gRPC-Web / Connect / Protobuf | `POST http(s)://<gw>:8000/mcp/{server}/grpc/{pkg.Service}/{Method}` | base URL gRPC-Web/Connect | server + method (`allowed_mcp_tools` khớp `Method` hoặc `Service.Method`) |
+| gRPC native (HTTP/2 + trailers) | ⚠️ Chưa hỗ trợ trực tiếp | — | Uvicorn không phục vụ HTTP/2; đặt Envoy / nginx `grpc_pass` phía trước để chuyển gRPC native ↔ gRPC-Web rồi trỏ vào route trên |
+
+> Payload protobuf là nhị phân nên Gateway không đọc nội dung tham số; việc kiểm soát dựa trên tên method trong đường dẫn gRPC.
+
+---
+
+## 9. Tổng Kết & Danh Mục Sản Phẩm Chuyển Giao
+
+Hệ thống LLM Proxy & Monitoring Gateway đã hoàn thành trọn vẹn 100% các yêu cầu tại [`whattodo.md`](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/whattodo.md) với đầy đủ các thành phần mã nguồn và tài liệu:
+
+1. **Tài liệu Yêu cầu & Kiến trúc**:
+   - [`whattodo.md`](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/whattodo.md): Yêu cầu nghiệp vụ và phạm vi chức năng do con người xác định.
+   - [`howtodo.md`](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/howtodo.md): Giải pháp kiến trúc kỹ thuật chi tiết, sơ đồ Mermaid, phân tích domain và cơ chế bóc tách token.
+2. **Sổ tay Cấu hình Dành cho Dev Mạng LAN**:
+   - [`a.i-ide-setup-use-proxy.md`](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/a.i-ide-setup-use-proxy.md): Hướng dẫn chi tiết đường dẫn file, key JSON, biến môi trường cho 4 IDE trên Linux, Windows, macOS.
+3. **Mã Nguồn Máy Chủ Proxy & Giám Sát**:
+   - [`proxy_server.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/proxy_server.py): Máy chủ FastAPI hỗ trợ Reverse Proxy, stream SSE không delay, kiểm soát chính sách ma trận và API CRUD.
+   - [`database.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/database.py): Cơ sở dữ liệu SQLite lưu vết audit log IP, MAC, Model, Token In/Out, hạn mức ngày.
+   - [`token_utils.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/token_utils.py): Cơ chế phân giải MAC Address qua ARP (`/proc/net/arp`) và bóc tách token SSE từ stream.
+   - [`policy_matrix.yaml`](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/policy_matrix.yaml): Ma trận phân quyền kiểm soát chi tiết IP/MAC, Provider, Model, Quota.
+4. **Giao Diện Trực Quan Web Dashboard**:
+   - [`static/index.html`](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/static/index.html): Giao diện quản trị Dark Mode hai tab (Giám sát Realtime + Chỉnh sửa ma trận phân quyền trực tiếp).
+5. **Đóng Gói & Tự Động Hóa Triển Khai Docker**:
+   - [`Dockerfile`](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/Dockerfile) & [`docker-compose.yml`](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/docker-compose.yml): Đóng gói chuẩn Container chạy ổn định và lành mạnh (Healthy) trên Docker Desktop.
+

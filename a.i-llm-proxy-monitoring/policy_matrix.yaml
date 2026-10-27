@@ -1,0 +1,46 @@
+default_policy:
+  action: allow
+  allowed_providers:
+  - '*'
+  allowed_models:
+  - '*'
+  allowed_mcp_servers:
+  - '*'
+  allowed_mcp_tools:
+  - '*'
+  max_input_tokens_per_request: 0
+  max_output_tokens_per_request: 0
+  daily_total_token_quota: 0
+domain_policy: {}
+mcp_servers:
+  lan-tools:
+    type: builtin
+    description: Bộ công cụ LAN Gateway tích hợp (lan_status, lan_ping, lan_arp_lookup)
+rules:
+- name: Proxy Host Laptop (qua Docker bridge, không phụ thuộc IP LAN)
+  ip_range: 172.16.0.0/12
+  allowed_providers:
+  - '*'
+  allowed_models:
+  - '*'
+  allowed_mcp_servers:
+  - '*'
+  allowed_mcp_tools:
+  - '*'
+  max_input_tokens_per_request: 0
+  max_output_tokens_per_request: 0
+  daily_total_token_quota: 0
+- name: Local Host / Admin
+  ip: 127.0.0.1
+  mac: LOCAL_HOST
+  allowed_providers:
+  - '*'
+  allowed_models:
+  - '*'
+  allowed_mcp_servers:
+  - '*'
+  allowed_mcp_tools:
+  - '*'
+  max_input_tokens_per_request: 0
+  max_output_tokens_per_request: 0
+  daily_total_token_quota: 0

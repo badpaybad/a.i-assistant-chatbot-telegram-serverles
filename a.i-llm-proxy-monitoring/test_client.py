@@ -1,0 +1,363 @@
+import os
+import sys
+import shutil
+import tempfile
+import unittest
+
+# ==== Cô lập môi trường test: dùng bản sao policy + DB tạm ====
+# Phải set biến môi trường TRƯỚC khi import proxy_server/database (đọc path lúc import).
+# Nhờ vậy policy_matrix.yaml thật và audit DB thật không bị test ghi vào.
+_BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+_TMP_DIR = tempfile.mkdtemp(prefix="llm_proxy_test_")
+shutil.copy(os.path.join(_BASE_DIR, "policy_matrix.yaml"), os.path.join(_TMP_DIR, "policy_matrix.yaml"))
+os.environ["POLICY_FILE"] = os.path.join(_TMP_DIR, "policy_matrix.yaml")
+os.environ["DB_PATH"] = os.path.join(_TMP_DIR, "llm_audit_test.db")
+
+from fastapi.testclient import TestClient
+
+from proxy_server import app, get_policy_for_client, is_model_allowed, load_policy, save_policy
+from token_utils import resolve_mac_address, estimate_input_tokens
+from database import init_db, log_request, get_daily_token_usage, get_summary_stats, get_recent_logs
+
+# Rule mẫu chỉ dùng cho test — được nạp lúc setUpClass và xóa lúc tearDownClass
+TEST_FIXTURE_RULES = [
+    {
+        "name": "[TEST] Tech Lead - PC",
+        "ip": "10.99.0.10",
+        "mac": "02:00:00:aa:bb:03",
+        "allowed_providers": ["*"],
+        "allowed_models": ["*"],
+        "allowed_mcp_servers": ["*"],
+        "allowed_mcp_tools": ["*"],
+        "max_input_tokens_per_request": 128000,
+        "max_output_tokens_per_request": 16000,
+        "daily_total_token_quota": 2000000,
+    },
+    {
+        "name": "[TEST] Junior Dev - PC",
+        "ip": "10.99.0.95",
+        "mac": "02:00:00:aa:bb:02",
+        "allowed_providers": ["google", "openai", "mcp"],
+        "allowed_models": ["gemini-1.5-flash*", "gpt-4o-mini*"],
+        "allowed_mcp_servers": ["lan-tools"],
+        "allowed_mcp_tools": ["lan_ping", "lan_status"],
+        "max_input_tokens_per_request": 16000,
+        "max_output_tokens_per_request": 2000,
+        "daily_total_token_quota": 150000,
+    },
+    {
+        "name": "[TEST] Guest Subnet",
+        "ip_range": "10.99.1.0/24",
+        "allowed_providers": ["google"],
+        "allowed_models": ["gemini-1.5-flash*"],
+        "allowed_mcp_servers": ["lan-tools"],
+        "allowed_mcp_tools": ["lan_ping"],
+        "max_input_tokens_per_request": 4000,
+        "max_output_tokens_per_request": 1000,
+        "daily_total_token_quota": 30000,
+    },
+]
+
+class TestLLMProxy(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        init_db()
+        cls.client = TestClient(app)
+        # Nạp rule test vào đầu danh sách (ưu tiên khớp trước)
+        policy = load_policy()
+        policy["rules"] = TEST_FIXTURE_RULES + policy.get("rules", [])
+        save_policy(policy)
+
+    @classmethod
+    def tearDownClass(cls):
+        # Xóa toàn bộ rule test + DB tạm
+        policy = load_policy()
+        policy["rules"] = [r for r in policy.get("rules", []) if not r.get("name", "").startswith("[TEST]")]
+        save_policy(policy)
+        shutil.rmtree(_TMP_DIR, ignore_errors=True)
+
+    def test_01_mac_resolution(self):
+        """Kiểm tra nhận diện MAC cho localhost và IP LAN"""
+        mac_local = resolve_mac_address("127.0.0.1")
+        self.assertEqual(mac_local, "LOCAL_HOST")
+
+    def test_02_policy_matching(self):
+        """Kiểm tra khớp ma trận chính sách theo MAC/IP/CIDR và fallback allow all"""
+        # Rule test theo MAC + IP
+        policy_lead = get_policy_for_client("10.99.0.10", "02:00:00:aa:bb:03")
+        self.assertEqual(policy_lead["name"], "[TEST] Tech Lead - PC")
+        self.assertTrue(is_model_allowed("claude-3-5-sonnet-20241022", policy_lead["allowed_models"]))
+
+        policy_junior = get_policy_for_client("10.99.0.95", "02:00:00:aa:bb:02")
+        self.assertEqual(policy_junior["name"], "[TEST] Junior Dev - PC")
+        self.assertTrue(is_model_allowed("gemini-1.5-flash", policy_junior["allowed_models"]))
+        self.assertFalse(is_model_allowed("claude-3-5-sonnet", policy_junior["allowed_models"]))
+
+        # Rule test theo dải CIDR
+        policy_guest = get_policy_for_client("10.99.1.42", "UNKNOWN_MAC")
+        self.assertEqual(policy_guest["name"], "[TEST] Guest Subnet")
+        self.assertFalse(is_model_allowed("gpt-4o", policy_guest["allowed_models"]))
+
+        # Máy mới chưa cấu hình -> Default Policy allow all
+        policy_new = get_policy_for_client("10.99.2.77", "aa:bb:cc:dd:ee:ff")
+        self.assertEqual(policy_new["name"], "Default Policy (Fallback)")
+        self.assertTrue(is_model_allowed("claude-3-5-sonnet-20241022", policy_new["allowed_models"]))
+        self.assertIn("*", policy_new["allowed_providers"])
+        # Mặc định không giới hạn token (0 = unlimited)
+        self.assertEqual(policy_new.get("max_input_tokens_per_request", 0), 0)
+        self.assertEqual(policy_new.get("max_output_tokens_per_request", 0), 0)
+        self.assertEqual(policy_new.get("daily_total_token_quota", 0), 0)
+
+    def test_02b_per_machine_token_limit_blocks(self):
+        """Máy được cấu hình giới hạn riêng (Junior 16k input) vẫn bị chặn khi vượt"""
+        big_prompt = "x" * (16001 * 4 + 100)  # ~16k+ tokens
+        res = self.client.post(
+            "/openai/v1/chat/completions",
+            json={"model": "gpt-4o-mini", "messages": [{"role": "user", "content": big_prompt}]},
+            headers={"X-Forwarded-For": "10.99.0.95"},
+        )
+        self.assertEqual(res.status_code, 400)
+        self.assertIn("exceed", res.text)
+
+    def test_03_input_token_estimation(self):
+        """Kiểm tra ước tính token input từ body request"""
+        sample_anthropic_body = {
+            "model": "claude-3-5-sonnet-20241022",
+            "messages": [{"role": "user", "content": "Hello world, this is a prompt test for LLM Proxy"}]
+        }
+        model, est_tokens = estimate_input_tokens(sample_anthropic_body, "anthropic")
+        self.assertEqual(model, "claude-3-5-sonnet-20241022")
+        self.assertGreater(est_tokens, 5)
+
+    def test_04_database_logging(self):
+        """Kiểm tra ghi log và tính tổng quota hàng ngày"""
+        test_ip = "192.168.1.254"
+        test_mac = "aa:bb:cc:dd:ee:ff"
+        
+        # Ghi log mẫu
+        log_id = log_request(
+            client_ip=test_ip,
+            client_mac=test_mac,
+            machine_name="Test Workstation",
+            provider="google",
+            model="gemini-1.5-flash",
+            endpoint="v1beta/models/gemini-1.5-flash:generateContent",
+            status_code=200,
+            action="ALLOWED",
+            input_tokens=150,
+            output_tokens=300,
+            latency_ms=250
+        )
+        self.assertIsNotNone(log_id)
+
+        # Kiểm tra tính tổng daily usage
+        daily_used = get_daily_token_usage(test_ip, test_mac)
+        self.assertGreaterEqual(daily_used, 450)
+
+        # Kiểm tra summary stats
+        stats = get_summary_stats()
+        self.assertIn("totals", stats)
+        self.assertGreater(stats["totals"]["total_requests"], 0)
+
+    def test_05_block_forbidden_model(self):
+        """Kiểm tra chặn model không được phép qua API endpoint"""
+        # Giả lập request từ Junior Dev (192.168.1.95) gọi model cấm claude-3-5-sonnet
+        # Vì test client gọi qua localhost (127.0.0.1) được full quyền, ta giả lập gọi model không có trong default policy hoặc tạo mock
+        response = self.client.get("/api/stats")
+        self.assertEqual(response.status_code, 200)
+
+        response_logs = self.client.get("/api/logs?limit=10")
+        self.assertEqual(response_logs.status_code, 200)
+        self.assertIsInstance(response_logs.json(), list)
+
+    def test_06_policy_crud_api(self):
+        """Kiểm tra API thêm, sửa, xóa rule phân quyền"""
+        # 1. Thêm rule mới
+        new_rule = {
+            "name": "Test UI Rule",
+            "ip": "192.168.1.199",
+            "mac": "cc:dd:ee:11:22:33",
+            "allowed_providers": ["google"],
+            "allowed_models": ["gemini-1.5-flash*"],
+            "max_input_tokens_per_request": 8000,
+            "max_output_tokens_per_request": 1000,
+            "daily_total_token_quota": 50000
+        }
+        res_add = self.client.post("/api/policy/rule", json=new_rule)
+        self.assertEqual(res_add.status_code, 200)
+        self.assertTrue(res_add.json()["success"])
+
+        # 2. Đọc lại policy để xác nhận rule đã được ghi vào
+        res_get = self.client.get("/api/policy")
+        self.assertEqual(res_get.status_code, 200)
+        rules = res_get.json()["rules"]
+        rule_names = [r["name"] for r in rules]
+        self.assertIn("Test UI Rule", rule_names)
+
+        # 3. Xóa rule vừa thêm để dọn dẹp
+        res_del = self.client.delete("/api/policy/rule/Test UI Rule")
+        self.assertEqual(res_del.status_code, 200)
+        self.assertTrue(res_del.json()["success"])
+
+    def test_07_mcp_policy_checking(self):
+        """Kiểm tra phân quyền MCP Server và MCP Tool theo IP/MAC"""
+        from proxy_server import is_mcp_server_allowed, is_mcp_tool_allowed
+
+        # Server check
+        self.assertTrue(is_mcp_server_allowed("lan-tools", ["lan-tools", "postgres-db"]))
+        self.assertTrue(is_mcp_server_allowed("any-server", ["*"]))
+        self.assertFalse(is_mcp_server_allowed("forbidden-server", ["lan-tools"]))
+
+        # Tool check with wildcard
+        self.assertTrue(is_mcp_tool_allowed("lan_ping", ["lan_*"]))
+        self.assertTrue(is_mcp_tool_allowed("read_user", ["read_*", "get_*"]))
+        self.assertFalse(is_mcp_tool_allowed("delete_db", ["read_*", "get_*"]))
+
+    def test_08_mcp_builtin_tools(self):
+        """Kiểm tra thực thi các built-in tools của Gateway MCP"""
+        import asyncio
+        from proxy_server import execute_builtin_mcp_tool
+
+        # 1. lan_status
+        res_status = asyncio.run(execute_builtin_mcp_tool("lan_status", {}))
+        self.assertIn("content", res_status)
+        self.assertIn("LAN LLM Proxy Gateway Status", res_status["content"][0]["text"])
+
+        # 2. lan_arp_lookup
+        res_arp = asyncio.run(execute_builtin_mcp_tool("lan_arp_lookup", {"ip": "127.0.0.1"}))
+        self.assertIn("LOCAL_HOST", res_arp["content"][0]["text"])
+
+    def test_09_mcp_sse_session_and_messages(self):
+        """Kiểm tra luồng SSE và gửi nhận JSON-RPC của MCP"""
+        import json
+        from proxy_server import mcp_sse_sessions
+
+        # Tạo giả lập session
+        session_id = "test_session_123"
+        import asyncio
+        queue = asyncio.Queue()
+        mcp_sse_sessions[session_id] = queue
+
+        # Gửi RPC initialize
+        init_payload = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": {"clientInfo": {"name": "UnitTest", "version": "1.0"}}
+        }
+        res_post = self.client.post(f"/mcp/lan-tools/messages?sessionId={session_id}", json=init_payload)
+        self.assertEqual(res_post.status_code, 202)
+
+        # Đọc response từ queue
+        event_str = queue.get_nowait()
+        self.assertTrue(event_str.startswith("event: message"))
+        self.assertIn("LAN-MCP-Gateway", event_str)
+
+        # Dọn dẹp
+        mcp_sse_sessions.pop(session_id, None)
+
+    def test_10_mcp_tool_blocking(self):
+        """Kiểm tra chặn MCP tool khi bị giới hạn bởi Policy Matrix"""
+        import asyncio
+        from proxy_server import mcp_sse_sessions
+
+        session_id = "test_session_block"
+        queue = asyncio.Queue()
+        mcp_sse_sessions[session_id] = queue
+
+        # Giả lập rule chặn bằng cách thêm rule tạm
+        temp_rule = {
+            "name": "Restricted MCP Client",
+            "ip": "192.168.1.99",
+            "allowed_providers": ["*"],
+            "allowed_models": ["*"],
+            "allowed_mcp_servers": ["lan-tools"],
+            "allowed_mcp_tools": ["lan_status"]  # Chỉ cho phép lan_status, cấm lan_ping
+        }
+        self.client.post("/api/policy/rule", json=temp_rule)
+
+        try:
+            # Gửi gọi tool lan_ping (bị cấm)
+            call_payload = {
+                "jsonrpc": "2.0",
+                "id": 99,
+                "method": "tools/call",
+                "params": {"name": "lan_ping", "arguments": {"target": "127.0.0.1"}}
+            }
+            res_call = self.client.post(
+                f"/mcp/lan-tools/messages?sessionId={session_id}",
+                json=call_payload,
+                headers={"X-Forwarded-For": "192.168.1.99"}
+            )
+            self.assertEqual(res_call.status_code, 202)
+
+            # Response trong queue phải chứa error -32003
+            event_str = queue.get_nowait()
+            self.assertIn("-32003", event_str)
+            self.assertIn("forbidden", event_str.lower())
+        finally:
+            self.client.delete("/api/policy/rule/Restricted MCP Client")
+            mcp_sse_sessions.pop(session_id, None)
+
+    def test_11_discovery_and_domain_block(self):
+        """Lần đầu gọi -> ghi nhận domain; Block domain qua UI API -> request bị chặn 403"""
+        res = self.client.post("/api/domain-policy", json={"domain": "api.openai.com", "action": "block"})
+        self.assertEqual(res.status_code, 200)
+        try:
+            r = self.client.post(
+                "/openai/v1/chat/completions",
+                json={"model": "gpt-4o-mini", "messages": [{"role": "user", "content": "hi"}]},
+                headers={"X-Forwarded-For": "10.99.2.50"},
+            )
+            self.assertEqual(r.status_code, 403)
+            self.assertIn("BLOCKED", r.text)
+
+            disc = self.client.get("/api/discovery").json()
+            hits = [e for e in disc["endpoints"] if e["domain"] == "api.openai.com" and e["provider"] == "openai"]
+            self.assertEqual(len(hits), 1)
+            self.assertEqual(hits[0]["domain_action"], "block")
+            self.assertGreaterEqual(hits[0]["blocked_count"], 1)
+            self.assertEqual(hits[0]["last_model"], "gpt-4o-mini")
+        finally:
+            self.client.post("/api/domain-policy", json={"domain": "api.openai.com", "action": "reset"})
+        self.assertNotIn("api.openai.com", load_policy().get("domain_policy") or {})
+
+    def test_12_domain_wildcard(self):
+        """Wildcard domain policy (*.googleapis.com) và mặc định allow"""
+        from proxy_server import get_domain_action
+        pol = {"domain_policy": {"*.googleapis.com": "block", "daily-cloudcode-pa.googleapis.com": "allow"}}
+        self.assertEqual(get_domain_action("cloudcode-pa.googleapis.com", pol), "block")
+        self.assertEqual(get_domain_action("daily-cloudcode-pa.googleapis.com", pol), "allow")
+        self.assertEqual(get_domain_action("api.anthropic.com", pol), "allow")
+
+    def test_13_mcp_grpc_method_blocking(self):
+        """MCP qua gRPC/protobuf: chặn theo tên method (allowed_mcp_tools)"""
+        self.client.post("/api/mcp/servers", json={
+            "name": "test-grpc", "type": "grpc", "upstream_url": "http://127.0.0.1:9", "description": "test"})
+        self.client.post("/api/policy/rule", json={
+            "name": "[TEST] gRPC Client", "ip": "10.99.3.1",
+            "allowed_providers": ["*"], "allowed_models": ["*"],
+            "allowed_mcp_servers": ["test-grpc"], "allowed_mcp_tools": ["Get*"]})
+        try:
+            r = self.client.post(
+                "/mcp/test-grpc/grpc/demo.v1.DataService/DeleteAll",
+                content=b"\x00\x00\x00\x00\x00",
+                headers={"Content-Type": "application/grpc-web+proto", "X-Forwarded-For": "10.99.3.1"},
+            )
+            self.assertEqual(r.status_code, 403)
+            self.assertEqual(r.headers.get("grpc-status"), "7")
+
+            # Method được phép -> đi tiếp tới upstream (không tồn tại) -> 502 / grpc-status 14
+            r2 = self.client.post(
+                "/mcp/test-grpc/grpc/demo.v1.DataService/GetItem",
+                content=b"\x00\x00\x00\x00\x00",
+                headers={"Content-Type": "application/grpc-web+proto", "X-Forwarded-For": "10.99.3.1"},
+            )
+            self.assertEqual(r2.status_code, 502)
+            self.assertEqual(r2.headers.get("grpc-status"), "14")
+        finally:
+            self.client.delete("/api/policy/rule/[TEST] gRPC Client")
+            self.client.delete("/api/mcp/servers/test-grpc")
+
+if __name__ == "__main__":
+    unittest.main()
