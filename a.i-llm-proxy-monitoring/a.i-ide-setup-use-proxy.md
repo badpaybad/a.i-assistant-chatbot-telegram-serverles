@@ -22,14 +22,23 @@ Trước khi thực hiện cấu hình trên máy trạm (PC Client), hãy xác 
 
 ## 🪐 1. Cấu Hình Antigravity & Antigravity IDE
 
-### 1.1. Antigravity IDE (Desktop Application)
+### 1.1. Antigravity IDE (Desktop Application — Phiên bản `< 2.6.0` và `>= 2.6.0`)
 
-#### ⚠️ CẢNH BÁO QUAN TRỌNG: User Settings vs Workspace Settings
-Antigravity IDE hoạt động dựa trên kiến trúc Electron:
-1. Tiến trình **Electron Main Process** (`main.js`) khởi tạo và sinh ra một tiến trình Go chạy ngầm: `language_server_linux_x64` (hoặc `language_server_windows_x64.exe` trên Windows, `language_server_darwin_arm64` trên macOS).
-2. Khi khởi tạo daemon này, Electron Main Process đọc cấu hình `jetski.cloudCodeUrl` **TRỰC TIẾP TỪ FILE USER SETTINGS TOÀN CỤC CỦA NGƯỜI DÙNG** để truyền cờ `--cloud_code_endpoint <URL>`.
-3. ❌ **LƯU Ý**: Nếu bạn chỉ đặt `"jetski.cloudCodeUrl"` trong file `.vscode/settings.json` (Workspace Settings của từng thư mục dự án), tiến trình Main Process sẽ **KHÔNG NHẬN** và language server daemon vẫn gọi thẳng ra Google Cloud!
-4. ✅ **BẮT BUỘC**: Phải cấu hình vào file **User Settings (`settings.json`)** của hệ điều hành.
+#### ⚠️ CẢNH BÁO QUAN TRỌNG: Thay Đổi Kiến Trúc Từ Phiên Bản `2.6.0` (`agy --hub`)
+Khi nâng cấp **Antigravity IDE lên phiên bản `2.6.0`** (kèm `agy` CLI v1.4.9+ / Server v2.28.0+), kiến trúc gọi Google CloudCode PA đã thay đổi căn bản:
+
+1. **Ở phiên bản cũ (`< 2.6.0`)**:
+   - Tiến trình **Electron Main Process** (`main.js`) trực tiếp khởi tạo daemon `language_server_linux_x64` (hoặc Windows/macOS tương ứng), đọc `"jetski.cloudCodeUrl"` từ **User `settings.json`** và truyền cờ `--cloud_code_endpoint <URL>`.
+2. **Ở phiên bản mới (`>= 2.6.0`)**:
+   - Electron `main.js` **không còn** chạy `language_server_*` nữa (chỉ giữ lại các tác vụ nền kiểm tra trạng thái 5 phút/lần như `loadCodeAssist`, `fetchAvailableModels`, `fetchUserInfo`, `cascadeNuxes` đọc từ `"jetski.cloudCodeUrl"`).
+   - Toàn bộ tác vụ Agent / Chat / Code Generation (`v1internal:streamGenerateContent?alt=sse`) được chuyển sang binary hợp nhất **`~/.gemini/bin/agy --hub`** do extension tích hợp `extensions/agy` khởi chạy.
+   - Binary `agy` mới **đã loại bỏ hoàn toàn cờ `--cloud_code_endpoint`** *(nếu truyền cờ này sẽ báo lỗi `flags provided but not defined: -cloud_code_endpoint`)* và chuyển sang đọc biến môi trường **`CLOUD_CODE_URL`** khi khởi tạo (`Overriding CloudCodeServerURL via CLOUD_CODE_URL environment variable`).
+   - Do `extensions/agy/vscode/extension.js` khởi tạo môi trường tiến trình con từ `process.env` mà không tự ánh xạ `jetski.cloudCodeUrl` sang `CLOUD_CODE_URL`, **nếu chỉ cấu hình `settings.json` mà không đặt biến môi trường `CLOUD_CODE_URL`**, toàn bộ lưu lượng chat/LLM của `agy --hub` sẽ đi thẳng ra `https://daily-cloudcode-pa.googleapis.com` (bỏ qua Proxy)!
+
+> ✅ **KẾT LUẬN BẮT BUỘC CHO ANTIGRAVITY IDE `>= 2.6.0`**:
+> Phải cấu hình đồng thời **cả 2 nơi**:
+> 1. **Biến môi trường hệ thống `CLOUD_CODE_URL`** = `"http://192.168.1.183:8000/google"` *(để tiến trình `agy --hub` và `agy` CLI định tuyến toàn bộ request LLM `v1internal:streamGenerateContent` qua Proxy)*.
+> 2. **File User `settings.json` (`"jetski.cloudCodeUrl"`)** = `"http://192.168.1.183:8000/google"` *(để tiến trình Electron Main Process cũng định tuyến các request kiểm tra trạng thái qua Proxy)*.
 
 ---
 
@@ -42,7 +51,70 @@ Antigravity IDE hoạt động dựa trên kiến trúc Electron:
 
 ---
 
-#### 🛠️ Các Bước Cấu Hình Chi Tiết:
+#### 🛠️ Bước 1: Cấu Hình Biến Môi Trường `CLOUD_CODE_URL` (Bắt buộc cho v2.6.0+)
+
+Để cả khi mở Antigravity IDE từ biểu tượng Desktop/Menu lẫn từ Terminal đều nhận được `CLOUD_CODE_URL`, thực hiện theo hệ điều hành của bạn:
+
+- **Trên Linux (Ubuntu / Debian / Fedora / Arch)**:
+  Chạy cụm lệnh sau trên Terminal (thay `http://192.168.1.183:8000/google` bằng `http://127.0.0.1:8000/google` nếu Proxy chạy ngay trên máy đó):
+  ```bash
+  PROXY_GOOGLE_URL="http://192.168.1.183:8000/google"
+
+  # 1. Xuất vào ~/.bashrc và ~/.profile cho Terminal & X11 login session
+  grep -q "CLOUD_CODE_URL" ~/.bashrc || echo "export CLOUD_CODE_URL=\"$PROXY_GOOGLE_URL\"" >> ~/.bashrc
+  grep -q "CLOUD_CODE_URL" ~/.profile || echo "export CLOUD_CODE_URL=\"$PROXY_GOOGLE_URL\"" >> ~/.profile
+
+  # 2. Cấu hình cho systemd user session (GNOME / KDE / Wayland Desktop Apps)
+  mkdir -p ~/.config/environment.d
+  echo "CLOUD_CODE_URL=$PROXY_GOOGLE_URL" > ~/.config/environment.d/llm-proxy.conf
+  systemctl --user set-environment CLOUD_CODE_URL="$PROXY_GOOGLE_URL" 2>/dev/null || true
+  dbus-update-activation-environment --systemd CLOUD_CODE_URL="$PROXY_GOOGLE_URL" 2>/dev/null || true
+
+  # 3. Đảm bảo Desktop Launcher truyền trực tiếp CLOUD_CODE_URL khi bấm icon
+  if [ -f ~/.local/share/applications/antigravity-ide.desktop ]; then
+    sed -i "s|^Exec=/usr/share/antigravity-ide/antigravity-ide|Exec=env CLOUD_CODE_URL=$PROXY_GOOGLE_URL /usr/share/antigravity-ide/antigravity-ide|g" ~/.local/share/applications/antigravity-ide.desktop
+  fi
+  ```
+
+- **Trên Windows (PowerShell)**:
+  Đặt biến môi trường cấp User (có hiệu lực cho cả khi bấm icon Antigravity IDE ngoài Desktop/Start Menu lẫn PowerShell):
+  ```powershell
+  [Environment]::SetEnvironmentVariable("CLOUD_CODE_URL", "http://192.168.1.183:8000/google", "User")
+  $env:CLOUD_CODE_URL = "http://192.168.1.183:8000/google"
+  Write-Host "Đã thiết lập biến môi trường CLOUD_CODE_URL cho Windows User."
+  ```
+
+- **Trên macOS (Terminal)**:
+  ```bash
+  PROXY_GOOGLE_URL="http://192.168.1.183:8000/google"
+  grep -q "CLOUD_CODE_URL" ~/.zshrc || echo "export CLOUD_CODE_URL=\"$PROXY_GOOGLE_URL\"" >> ~/.zshrc
+  launchctl setenv CLOUD_CODE_URL "$PROXY_GOOGLE_URL"
+  ```
+
+> 💡 **Mẹo chuyển nóng (Hot-Switch) cho phiên Antigravity IDE v2.6.0 đang mở sẵn (không cần tắt IDE)**:
+> Nếu bạn đang mở dở các cửa sổ Antigravity IDE v2.6.0 mà chưa muốn khởi động lại ngay, có thể gọi RPC nội bộ `SetCloudCodeURL` vào các tiến trình `agy --hub` đang chạy để chuyển hướng tức thì sang Proxy:
+> ```bash
+> python3 -c '
+> import subprocess, re, urllib.request, json
+> proxy_url = "http://192.168.1.183:8000/google" # Hoặc http://127.0.0.1:8000/google
+> for line in subprocess.check_output(["ps", "-eo", "pid,args"], text=True).splitlines():
+>     if "agy --hub" in line:
+>         p, c = re.search(r"--hub-port=(\d+)", line), re.search(r"--csrf_token=([^\s]+)", line)
+>         if p and c:
+>             req = urllib.request.Request(
+>                 f"http://127.0.0.1:{p.group(1)}/exa.language_server_pb.LanguageServerService/SetCloudCodeURL",
+>                 data=json.dumps({"url": proxy_url}).encode(),
+>                 headers={"Content-Type": "application/json", "x-codeium-csrf-token": c.group(1)},
+>                 method="POST"
+>             )
+>              urllib.request.urlopen(req, timeout=3)
+>             print(f"Switched agy --hub (port {p.group(1)}) -> {proxy_url}")
+> '
+> ```
+
+---
+
+#### 🛠️ Bước 2: Cấu Hình User `settings.json` (`jetski.cloudCodeUrl`)
 
 **Cách 1: Thao tác trên giao diện IDE (Khuyến nghị)**
 1. Mở **Antigravity IDE**.
@@ -57,15 +129,15 @@ Antigravity IDE hoạt động dựa trên kiến trúc Electron:
    }
    ```
    > ⚠️ **KHÔNG đặt `http.proxy` trỏ vào Gateway**: Gateway là *reverse proxy* (định tuyến theo path `/google`, `/anthropic`...), không hỗ trợ phương thức `CONNECT` của forward proxy. Nếu đặt `http.proxy`, toàn bộ traffic HTTPS khác của IDE (đăng nhập OAuth, marketplace, cập nhật) sẽ bị lỗi.
+   > ⚠️ **KHÔNG thêm `--cloud_code_endpoint` vào `"antigravity.serverArgs"`** trên bản 2.6.0+: Binary `agy` đã bỏ cờ này và sẽ báo lỗi không khởi động được server.
 5. Nhấn `Ctrl + S` (hoặc `Cmd + S`) để lưu file.
-6. **Khởi động lại Antigravity IDE hoàn toàn** (Đóng cửa sổ và mở lại) để tiến trình Go daemon nhận tham số endpoint mới.
+6. **Khởi động lại Antigravity IDE hoàn toàn** (hoặc chạy lệnh Hot-Switch ở trên).
 
 **Cách 2: Chỉnh sửa trực tiếp file bằng Terminal / Shell**
 
 - **Trên Linux**:
   ```bash
   mkdir -p "$HOME/.config/Antigravity IDE/User"
-  # Dùng jq để cập nhật JSON an toàn nếu file đã tồn tại
   python3 -c "
   import json, os
   p = os.path.expanduser('~/.config/Antigravity IDE/User/settings.json')
@@ -104,17 +176,17 @@ Antigravity IDE hoạt động dựa trên kiến trúc Electron:
 
 ---
 
-### 1.2. Antigravity CLI / Agent (Dòng Lệnh Terminal)
+### 1.2. Antigravity CLI (`agy` / `antigravity` trên Dòng Lệnh Terminal)
 
-Khi sử dụng công cụ dòng lệnh `antigravity`:
+Từ phiên bản Antigravity 2.0 / CLI `agy` v1.4.9+, lệnh CLI chính thức là `agy` (nằm tại `~/.gemini/bin/agy` hoặc `~/.local/bin/agy`) và sử dụng biến môi trường **`CLOUD_CODE_URL`**:
 
 #### 📂 Bảng Biến Môi Trường & Cờ Lệnh:
-| Tên Biến / Cờ Lệnh | Giá Trị Cần Cấu Hình | Ý Nghĩa |
-| :--- | :--- | :--- |
-| `--cloud_code_endpoint` | `"http://192.168.1.183:8000/google"` | Trỏ trực tiếp endpoint gọi Google CloudCode PA về Proxy |
-| `LLM_PROXY_URL` *(biến tự đặt, tùy chọn)* | `"http://192.168.1.183:8000"` | Gom địa chỉ Gateway vào 1 biến để alias dùng lại |
+| Tên Biến / Cờ Lệnh | Phiên Bản Áp Dụng | Giá Trị Cần Cấu Hình | Ý Nghĩa |
+| :--- | :--- | :--- | :--- |
+| **`CLOUD_CODE_URL`** | **`agy` CLI v1.4.9+ & IDE v2.6.0+ (Khuyến nghị)** | `"http://192.168.1.183:8000/google"` | Biến môi trường chuẩn ghi đè `CloudCodeServerURL` cho cả `agy` CLI và `agy --hub` |
+| `--cloud_code_endpoint` | Bản cũ `< 2.6.0` (`language_server_*`) | `"http://192.168.1.183:8000/google"` | Cờ CLI cũ (đã bị loại bỏ trên binary `agy` mới) |
 
-> ⚠️ **KHÔNG export `HTTP_PROXY` / `HTTPS_PROXY` trỏ vào Gateway.** Gateway là *reverse proxy* định tuyến theo path (`/google`, `/anthropic`, `/openai`, `/copilot`), không hỗ trợ `CONNECT` của forward proxy → mọi lệnh HTTPS khác (git, pip, npm, OAuth) sẽ lỗi. Chỉ cần trỏ endpoint/base URL như bảng trên.
+> ⚠️ **KHÔNG export `HTTP_PROXY` / `HTTPS_PROXY` trỏ vào Gateway.** Gateway là *reverse proxy* định tuyến theo path (`/google`, `/anthropic`, `/openai`, `/copilot`), không hỗ trợ `CONNECT` của forward proxy → mọi lệnh HTTPS khác (git, pip, npm, OAuth) sẽ lỗi. Chỉ cần `export CLOUD_CODE_URL=...` như bảng trên.
 
 #### Cấu hình cố định vào Shell Profile:
 
@@ -122,21 +194,19 @@ Khi sử dụng công cụ dòng lệnh `antigravity`:
   ```bash
   # Thêm vào cuối file ~/.bashrc hoặc ~/.zshrc
   export LLM_PROXY_URL="http://192.168.1.183:8000"   # laptop chạy proxy local: http://127.0.0.1:8000
-  
-  # Tạo alias tự động đính kèm endpoint cho antigravity CLI
-  alias antigravity='command antigravity --cloud_code_endpoint "$LLM_PROXY_URL/google"'
+  export CLOUD_CODE_URL="$LLM_PROXY_URL/google"
   ```
   Sau đó thực thi: `source ~/.bashrc` (hoặc `source ~/.zshrc`).
+  Kiểm tra nhanh bằng lệnh:
+  ```bash
+  agy -p "Reply OK"
+  ```
 
 - **Windows (PowerShell `$PROFILE`)**:
   Mở PowerShell và gõ:
   ```powershell
-  notepad $PROFILE
-  ```
-  Dán nội dung sau vào:
-  ```powershell
-  $env:LLM_PROXY_URL = "http://192.168.1.183:8000"
-  function antigravity { & "antigravity.exe" --cloud_code_endpoint "$env:LLM_PROXY_URL/google" $args }
+  [Environment]::SetEnvironmentVariable("CLOUD_CODE_URL", "http://192.168.1.183:8000/google", "User")
+  $env:CLOUD_CODE_URL = "http://192.168.1.183:8000/google"
   ```
 
 ---
@@ -153,11 +223,14 @@ Khi laptop di chuyển giữa các mạng (văn phòng, nhà, quán cafe), IP do
 
 #### Phương án A (đang áp dụng trên laptop Proxy Host)
 1. Container chạy với `restart: unless-stopped` → tự khởi động cùng Docker sau mỗi lần reboot.
-2. User Settings của IDE (`~/.config/Antigravity IDE/User/settings.json`):
-   ```json
-   { "jetski.cloudCodeUrl": "http://127.0.0.1:8000/google" }
+2. Đặt biến môi trường `CLOUD_CODE_URL="http://127.0.0.1:8000/google"` (trong `~/.bashrc`, `~/.profile`, `~/.config/environment.d/llm-proxy.conf` và `.desktop` launcher) **VÀ** giữ `"jetski.cloudCodeUrl": "http://127.0.0.1:8000/google"` trong `~/.config/Antigravity IDE/User/settings.json`.
+3. Kiểm tra xác nhận tiến trình `agy --hub` đã nhận biến môi trường:
+   ```bash
+   for pid in $(pgrep -f "agy --hub"); do
+     echo "PID $pid: $(tr '\0' '\n' < /proc/$pid/environ | grep CLOUD_CODE_URL)"
+   done
    ```
-3. Khởi động lại IDE hoàn toàn. Kiểm tra: `ps aux | grep cloud_code_endpoint` phải hiện `--cloud_code_endpoint http://127.0.0.1:8000/google`.
+   Và kiểm tra log trên Proxy Dashboard (`http://127.0.0.1:8000/dashboard`) thấy xuất hiện các bản ghi `endpoint: v1internal:streamGenerateContent` với đầy đủ tên model (`gemini-4-argon-medium`, `gemini-3.5-flash-lite`, ...) cùng số lượng `input_tokens` / `output_tokens`.
 4. Trong Docker Desktop, request từ host đi vào container hiển thị IP gateway bridge (`172.x.0.1`). Rule `Proxy Host Laptop` trong [policy_matrix.yaml](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/policy_matrix.yaml) khớp theo CIDR `172.16.0.0/12` nên log luôn gắn đúng tên máy dù IP LAN thay đổi.
 
 #### Phương án B/C cho máy khác truy cập vào laptop Proxy
