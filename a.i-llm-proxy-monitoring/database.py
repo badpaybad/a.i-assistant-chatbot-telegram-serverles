@@ -1,7 +1,7 @@
 import sqlite3
 import os
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Dict, Any, List, Optional
 
 def get_db_path() -> str:
@@ -275,11 +275,18 @@ def get_paginated_logs(
         }
 
 def get_summary_stats() -> Dict[str, Any]:
-    today_str = datetime.now().strftime("%Y-%m-%d")
+    now = datetime.now()
+    today_str = now.strftime("%Y-%m-%d")
+    week_start_dt = now - timedelta(days=now.weekday())
+    week_end_dt = week_start_dt + timedelta(days=6)
+    week_start_str = week_start_dt.strftime("%Y-%m-%d")
+    week_end_str = week_end_dt.strftime("%Y-%m-%d")
+    month_str = now.strftime("%Y-%m")
+
     with get_connection() as conn:
         cursor = conn.cursor()
         
-        # Total counts
+        # 1. Thống kê tổng hợp toàn hệ thống theo 4 mốc: Tất cả (All-Time), Hôm nay (Today), Tuần này (Week), Tháng này (Month)
         cursor.execute("""
             SELECT 
                 COUNT(*) AS total_requests,
@@ -287,40 +294,412 @@ def get_summary_stats() -> Dict[str, Any]:
                 COALESCE(SUM(CASE WHEN action LIKE 'BLOCKED%' THEN 1 ELSE 0 END), 0) AS blocked_requests,
                 COALESCE(SUM(input_tokens), 0) AS total_input_tokens,
                 COALESCE(SUM(output_tokens), 0) AS total_output_tokens,
-                COALESCE(SUM(total_tokens), 0) AS total_tokens
+                COALESCE(SUM(total_tokens), 0) AS total_tokens,
+
+                COALESCE(SUM(CASE WHEN DATE(timestamp) = DATE(?) THEN 1 ELSE 0 END), 0) AS today_requests,
+                COALESCE(SUM(CASE WHEN DATE(timestamp) = DATE(?) AND status_code = 200 THEN 1 ELSE 0 END), 0) AS today_successful_requests,
+                COALESCE(SUM(CASE WHEN DATE(timestamp) = DATE(?) AND action LIKE 'BLOCKED%' THEN 1 ELSE 0 END), 0) AS today_blocked_requests,
+                COALESCE(SUM(CASE WHEN DATE(timestamp) = DATE(?) THEN input_tokens ELSE 0 END), 0) AS today_input_tokens,
+                COALESCE(SUM(CASE WHEN DATE(timestamp) = DATE(?) THEN output_tokens ELSE 0 END), 0) AS today_output_tokens,
+                COALESCE(SUM(CASE WHEN DATE(timestamp) = DATE(?) THEN total_tokens ELSE 0 END), 0) AS today_tokens,
+
+                COALESCE(SUM(CASE WHEN DATE(timestamp) >= DATE(?) AND DATE(timestamp) <= DATE(?) THEN 1 ELSE 0 END), 0) AS week_requests,
+                COALESCE(SUM(CASE WHEN DATE(timestamp) >= DATE(?) AND DATE(timestamp) <= DATE(?) AND status_code = 200 THEN 1 ELSE 0 END), 0) AS week_successful_requests,
+                COALESCE(SUM(CASE WHEN DATE(timestamp) >= DATE(?) AND DATE(timestamp) <= DATE(?) AND action LIKE 'BLOCKED%' THEN 1 ELSE 0 END), 0) AS week_blocked_requests,
+                COALESCE(SUM(CASE WHEN DATE(timestamp) >= DATE(?) AND DATE(timestamp) <= DATE(?) THEN input_tokens ELSE 0 END), 0) AS week_input_tokens,
+                COALESCE(SUM(CASE WHEN DATE(timestamp) >= DATE(?) AND DATE(timestamp) <= DATE(?) THEN output_tokens ELSE 0 END), 0) AS week_output_tokens,
+                COALESCE(SUM(CASE WHEN DATE(timestamp) >= DATE(?) AND DATE(timestamp) <= DATE(?) THEN total_tokens ELSE 0 END), 0) AS week_tokens,
+
+                COALESCE(SUM(CASE WHEN strftime('%Y-%m', timestamp) = ? THEN 1 ELSE 0 END), 0) AS month_requests,
+                COALESCE(SUM(CASE WHEN strftime('%Y-%m', timestamp) = ? AND status_code = 200 THEN 1 ELSE 0 END), 0) AS month_successful_requests,
+                COALESCE(SUM(CASE WHEN strftime('%Y-%m', timestamp) = ? AND action LIKE 'BLOCKED%' THEN 1 ELSE 0 END), 0) AS month_blocked_requests,
+                COALESCE(SUM(CASE WHEN strftime('%Y-%m', timestamp) = ? THEN input_tokens ELSE 0 END), 0) AS month_input_tokens,
+                COALESCE(SUM(CASE WHEN strftime('%Y-%m', timestamp) = ? THEN output_tokens ELSE 0 END), 0) AS month_output_tokens,
+                COALESCE(SUM(CASE WHEN strftime('%Y-%m', timestamp) = ? THEN total_tokens ELSE 0 END), 0) AS month_tokens
             FROM llm_audit_log
-        """)
-        totals = dict(cursor.fetchone() or {})
+        """, (
+            today_str, today_str, today_str, today_str, today_str, today_str,
+            week_start_str, week_end_str, week_start_str, week_end_str, week_start_str, week_end_str,
+            week_start_str, week_end_str, week_start_str, week_end_str, week_start_str, week_end_str,
+            month_str, month_str, month_str, month_str, month_str, month_str
+        ))
+        agg = dict(cursor.fetchone() or {})
+
+        totals = {
+            "total_requests": int(agg.get("total_requests", 0) or 0),
+            "successful_requests": int(agg.get("successful_requests", 0) or 0),
+            "blocked_requests": int(agg.get("blocked_requests", 0) or 0),
+            "total_input_tokens": int(agg.get("total_input_tokens", 0) or 0),
+            "total_output_tokens": int(agg.get("total_output_tokens", 0) or 0),
+            "total_tokens": int(agg.get("total_tokens", 0) or 0),
+            "today_date": today_str,
+            "today_requests": int(agg.get("today_requests", 0) or 0),
+            "today_successful_requests": int(agg.get("today_successful_requests", 0) or 0),
+            "today_blocked_requests": int(agg.get("today_blocked_requests", 0) or 0),
+            "today_input_tokens": int(agg.get("today_input_tokens", 0) or 0),
+            "today_output_tokens": int(agg.get("today_output_tokens", 0) or 0),
+            "today_tokens": int(agg.get("today_tokens", 0) or 0),
+            "week_start": week_start_str,
+            "week_end": week_end_str,
+            "week_requests": int(agg.get("week_requests", 0) or 0),
+            "week_successful_requests": int(agg.get("week_successful_requests", 0) or 0),
+            "week_blocked_requests": int(agg.get("week_blocked_requests", 0) or 0),
+            "week_input_tokens": int(agg.get("week_input_tokens", 0) or 0),
+            "week_output_tokens": int(agg.get("week_output_tokens", 0) or 0),
+            "week_tokens": int(agg.get("week_tokens", 0) or 0),
+            "month": month_str,
+            "month_requests": int(agg.get("month_requests", 0) or 0),
+            "month_successful_requests": int(agg.get("month_successful_requests", 0) or 0),
+            "month_blocked_requests": int(agg.get("month_blocked_requests", 0) or 0),
+            "month_input_tokens": int(agg.get("month_input_tokens", 0) or 0),
+            "month_output_tokens": int(agg.get("month_output_tokens", 0) or 0),
+            "month_tokens": int(agg.get("month_tokens", 0) or 0),
+        }
+
+        today_summary = {
+            "date": today_str,
+            "total_requests": totals["today_requests"],
+            "successful_requests": totals["today_successful_requests"],
+            "blocked_requests": totals["today_blocked_requests"],
+            "input_tokens": totals["today_input_tokens"],
+            "output_tokens": totals["today_output_tokens"],
+            "total_tokens": totals["today_tokens"],
+        }
+
+        week_summary = {
+            "week_start": week_start_str,
+            "week_end": week_end_str,
+            "total_requests": totals["week_requests"],
+            "successful_requests": totals["week_successful_requests"],
+            "blocked_requests": totals["week_blocked_requests"],
+            "input_tokens": totals["week_input_tokens"],
+            "output_tokens": totals["week_output_tokens"],
+            "total_tokens": totals["week_tokens"],
+        }
+
+        month_summary = {
+            "month": month_str,
+            "total_requests": totals["month_requests"],
+            "successful_requests": totals["month_successful_requests"],
+            "blocked_requests": totals["month_blocked_requests"],
+            "input_tokens": totals["month_input_tokens"],
+            "output_tokens": totals["month_output_tokens"],
+            "total_tokens": totals["month_tokens"],
+        }
         
-        # Usage by client IP & MAC with violation detection
+        # 2. Thống kê theo từng Máy Trạm Mạng LAN (IP & MAC) với đủ 4 chỉ số: All-Time, Hôm nay, Tuần này, Tháng này
         cursor.execute("""
             SELECT client_ip, client_mac,
                    (SELECT machine_name FROM llm_audit_log sub WHERE sub.client_ip = l.client_ip ORDER BY id DESC LIMIT 1) AS machine_name,
-                   COUNT(*) AS req_count,
-                   SUM(total_tokens) AS sum_tokens,
+                   COUNT(*) AS alltime_requests,
+                   COALESCE(SUM(input_tokens), 0) AS alltime_input_tokens,
+                   COALESCE(SUM(output_tokens), 0) AS alltime_output_tokens,
+                   COALESCE(SUM(total_tokens), 0) AS alltime_tokens,
+
+                   COALESCE(SUM(CASE WHEN DATE(timestamp) = DATE(?) THEN 1 ELSE 0 END), 0) AS today_requests,
+                   COALESCE(SUM(CASE WHEN DATE(timestamp) = DATE(?) THEN input_tokens ELSE 0 END), 0) AS today_input_tokens,
+                   COALESCE(SUM(CASE WHEN DATE(timestamp) = DATE(?) THEN output_tokens ELSE 0 END), 0) AS today_output_tokens,
+                   COALESCE(SUM(CASE WHEN DATE(timestamp) = DATE(?) THEN total_tokens ELSE 0 END), 0) AS today_tokens,
+
+                   COALESCE(SUM(CASE WHEN DATE(timestamp) >= DATE(?) AND DATE(timestamp) <= DATE(?) THEN 1 ELSE 0 END), 0) AS week_requests,
+                   COALESCE(SUM(CASE WHEN DATE(timestamp) >= DATE(?) AND DATE(timestamp) <= DATE(?) THEN input_tokens ELSE 0 END), 0) AS week_input_tokens,
+                   COALESCE(SUM(CASE WHEN DATE(timestamp) >= DATE(?) AND DATE(timestamp) <= DATE(?) THEN output_tokens ELSE 0 END), 0) AS week_output_tokens,
+                   COALESCE(SUM(CASE WHEN DATE(timestamp) >= DATE(?) AND DATE(timestamp) <= DATE(?) THEN total_tokens ELSE 0 END), 0) AS week_tokens,
+
+                   COALESCE(SUM(CASE WHEN strftime('%Y-%m', timestamp) = ? THEN 1 ELSE 0 END), 0) AS month_requests,
+                   COALESCE(SUM(CASE WHEN strftime('%Y-%m', timestamp) = ? THEN input_tokens ELSE 0 END), 0) AS month_input_tokens,
+                   COALESCE(SUM(CASE WHEN strftime('%Y-%m', timestamp) = ? THEN output_tokens ELSE 0 END), 0) AS month_output_tokens,
+                   COALESCE(SUM(CASE WHEN strftime('%Y-%m', timestamp) = ? THEN total_tokens ELSE 0 END), 0) AS month_tokens,
+
+                   COALESCE(SUM(CASE WHEN DATE(timestamp) = DATE(?) THEN 1 ELSE 0 END), 0) AS req_count,
+                   COALESCE(SUM(CASE WHEN DATE(timestamp) = DATE(?) THEN total_tokens ELSE 0 END), 0) AS sum_tokens,
                    COALESCE(SUM(CASE WHEN action LIKE 'BLOCKED%' THEN 1 ELSE 0 END), 0) AS blocked_count,
                    (SELECT action FROM llm_audit_log sub WHERE (sub.client_ip = l.client_ip OR sub.client_mac = l.client_mac) AND sub.action LIKE 'BLOCKED%' ORDER BY id DESC LIMIT 1) AS last_violation_action,
                    (SELECT error_message FROM llm_audit_log sub WHERE (sub.client_ip = l.client_ip OR sub.client_mac = l.client_mac) AND sub.action LIKE 'BLOCKED%' ORDER BY id DESC LIMIT 1) AS last_violation_msg
             FROM llm_audit_log l
-            WHERE DATE(timestamp) = DATE(?)
             GROUP BY client_ip, client_mac
-            ORDER BY blocked_count DESC, sum_tokens DESC
-        """, (today_str,))
+            ORDER BY blocked_count DESC, today_tokens DESC, alltime_tokens DESC
+        """, (
+            today_str, today_str, today_str, today_str,
+            week_start_str, week_end_str, week_start_str, week_end_str, week_start_str, week_end_str, week_start_str, week_end_str,
+            month_str, month_str, month_str, month_str,
+            today_str, today_str
+        ))
         usage_by_client = [dict(row) for row in cursor.fetchall()]
 
-        # Usage by model
+        # 3. Thống kê theo từng Model AI với đủ 4 chỉ số: All-Time, Hôm nay, Tuần này, Tháng này
         cursor.execute("""
-            SELECT model, provider, COUNT(*) AS req_count, SUM(total_tokens) AS sum_tokens
+            SELECT model, provider,
+                   COUNT(*) AS req_count,
+                   COALESCE(SUM(total_tokens), 0) AS sum_tokens,
+                   COUNT(*) AS alltime_requests,
+                   COALESCE(SUM(input_tokens), 0) AS alltime_input_tokens,
+                   COALESCE(SUM(output_tokens), 0) AS alltime_output_tokens,
+                   COALESCE(SUM(total_tokens), 0) AS alltime_tokens,
+
+                   COALESCE(SUM(CASE WHEN DATE(timestamp) = DATE(?) THEN 1 ELSE 0 END), 0) AS today_requests,
+                   COALESCE(SUM(CASE WHEN DATE(timestamp) = DATE(?) THEN input_tokens ELSE 0 END), 0) AS today_input_tokens,
+                   COALESCE(SUM(CASE WHEN DATE(timestamp) = DATE(?) THEN output_tokens ELSE 0 END), 0) AS today_output_tokens,
+                   COALESCE(SUM(CASE WHEN DATE(timestamp) = DATE(?) THEN total_tokens ELSE 0 END), 0) AS today_tokens,
+
+                   COALESCE(SUM(CASE WHEN DATE(timestamp) >= DATE(?) AND DATE(timestamp) <= DATE(?) THEN 1 ELSE 0 END), 0) AS week_requests,
+                   COALESCE(SUM(CASE WHEN DATE(timestamp) >= DATE(?) AND DATE(timestamp) <= DATE(?) THEN input_tokens ELSE 0 END), 0) AS week_input_tokens,
+                   COALESCE(SUM(CASE WHEN DATE(timestamp) >= DATE(?) AND DATE(timestamp) <= DATE(?) THEN output_tokens ELSE 0 END), 0) AS week_output_tokens,
+                   COALESCE(SUM(CASE WHEN DATE(timestamp) >= DATE(?) AND DATE(timestamp) <= DATE(?) THEN total_tokens ELSE 0 END), 0) AS week_tokens,
+
+                   COALESCE(SUM(CASE WHEN strftime('%Y-%m', timestamp) = ? THEN 1 ELSE 0 END), 0) AS month_requests,
+                   COALESCE(SUM(CASE WHEN strftime('%Y-%m', timestamp) = ? THEN input_tokens ELSE 0 END), 0) AS month_input_tokens,
+                   COALESCE(SUM(CASE WHEN strftime('%Y-%m', timestamp) = ? THEN output_tokens ELSE 0 END), 0) AS month_output_tokens,
+                   COALESCE(SUM(CASE WHEN strftime('%Y-%m', timestamp) = ? THEN total_tokens ELSE 0 END), 0) AS month_tokens
             FROM llm_audit_log
             GROUP BY model, provider
-            ORDER BY sum_tokens DESC
-        """)
+            ORDER BY alltime_tokens DESC, req_count DESC
+        """, (
+            today_str, today_str, today_str, today_str,
+            week_start_str, week_end_str, week_start_str, week_end_str, week_start_str, week_end_str, week_start_str, week_end_str,
+            month_str, month_str, month_str, month_str
+        ))
         usage_by_model = [dict(row) for row in cursor.fetchall()]
 
         return {
             "totals": totals,
+            "today": today_summary,
+            "week": week_summary,
+            "month": month_summary,
             "usage_by_client": usage_by_client,
             "usage_by_model": usage_by_model
+        }
+
+
+def get_daily_token_charts(from_date: Optional[str] = None, to_date: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Thống kê dữ liệu biểu đồ (Charts tổng tokens) theo ngày:
+    - Cho phép lọc từ ngày (from_date) đến ngày (to_date); mặc định không chọn để hiển thị tất cả (Show All).
+    - Trả về:
+      1. by_day: Tổng tất cả tokens (input, output, total) và requests theo từng ngày.
+      2. by_pc & pc_series: Tổng số tokens theo ngày của từng PC (IP & MAC).
+      3. by_model & model_series: Tổng số tokens theo ngày của từng Model A.I.
+    """
+    clean_from = (from_date or "").strip()
+    clean_to = (to_date or "").strip()
+
+    where_clauses: List[str] = []
+    params: List[Any] = []
+
+    if clean_from:
+        where_clauses.append("DATE(timestamp) >= DATE(?)")
+        params.append(clean_from)
+    if clean_to:
+        where_clauses.append("DATE(timestamp) <= DATE(?)")
+        params.append(clean_to)
+
+    where_sql = ("WHERE " + " AND ".join(where_clauses)) if where_clauses else ""
+
+    with get_connection() as conn:
+        cursor = conn.cursor()
+
+        # Khoảng ngày nhỏ nhất / lớn nhất toàn bảng
+        cursor.execute("""
+            SELECT MIN(DATE(timestamp)) AS min_date,
+                   MAX(DATE(timestamp)) AS max_date
+            FROM llm_audit_log
+        """)
+        bounds_row = dict(cursor.fetchone() or {})
+        min_date = bounds_row.get("min_date") or ""
+        max_date = bounds_row.get("max_date") or ""
+
+        # 1. Chart theo tổng tất cả theo ngày (by_day)
+        cursor.execute(f"""
+            SELECT DATE(timestamp) AS date,
+                   COUNT(*) AS requests,
+                   COALESCE(SUM(input_tokens), 0) AS input_tokens,
+                   COALESCE(SUM(output_tokens), 0) AS output_tokens,
+                   COALESCE(SUM(total_tokens), 0) AS total_tokens
+            FROM llm_audit_log
+            {where_sql}
+            GROUP BY DATE(timestamp)
+            ORDER BY DATE(timestamp) ASC
+        """, tuple(params))
+        by_day = []
+        dates_set = set()
+        for r in cursor.fetchall():
+            row = dict(r)
+            d = row.get("date") or ""
+            if not d:
+                continue
+            dates_set.add(d)
+            by_day.append({
+                "date": d,
+                "requests": int(row.get("requests", 0) or 0),
+                "input_tokens": int(row.get("input_tokens", 0) or 0),
+                "output_tokens": int(row.get("output_tokens", 0) or 0),
+                "total_tokens": int(row.get("total_tokens", 0) or 0),
+            })
+
+        # 2. Chart theo từng PC là tổng số theo ngày của từng PC (by_pc)
+        cursor.execute(f"""
+            SELECT DATE(l.timestamp) AS date,
+                   l.client_ip,
+                   l.client_mac,
+                   (SELECT sub.machine_name FROM llm_audit_log sub WHERE sub.client_ip = l.client_ip ORDER BY sub.id DESC LIMIT 1) AS machine_name,
+                   COUNT(*) AS requests,
+                   COALESCE(SUM(l.input_tokens), 0) AS input_tokens,
+                   COALESCE(SUM(l.output_tokens), 0) AS output_tokens,
+                   COALESCE(SUM(l.total_tokens), 0) AS total_tokens
+            FROM llm_audit_log l
+            {where_sql.replace('timestamp', 'l.timestamp') if where_sql else ''}
+            GROUP BY DATE(l.timestamp), l.client_ip, l.client_mac
+            ORDER BY DATE(l.timestamp) ASC, total_tokens DESC
+        """, tuple(params))
+        by_pc = []
+        pc_map: Dict[str, Dict[str, Any]] = {}
+        for r in cursor.fetchall():
+            row = dict(r)
+            d = row.get("date") or ""
+            if not d:
+                continue
+            dates_set.add(d)
+            cip = row.get("client_ip") or "-"
+            cmac = row.get("client_mac") or "UNKNOWN_MAC"
+            mname = row.get("machine_name") or cip
+            reqs = int(row.get("requests", 0) or 0)
+            in_tok = int(row.get("input_tokens", 0) or 0)
+            out_tok = int(row.get("output_tokens", 0) or 0)
+            tot_tok = int(row.get("total_tokens", 0) or 0)
+
+            item = {
+                "date": d,
+                "client_ip": cip,
+                "client_mac": cmac,
+                "machine_name": mname,
+                "requests": reqs,
+                "input_tokens": in_tok,
+                "output_tokens": out_tok,
+                "total_tokens": tot_tok,
+            }
+            by_pc.append(item)
+
+            pc_key = f"{cip}|{cmac}"
+            if pc_key not in pc_map:
+                label = f"{mname} ({cip})" if mname and mname != cip else cip
+                pc_map[pc_key] = {
+                    "pc_key": pc_key,
+                    "label": label,
+                    "client_ip": cip,
+                    "client_mac": cmac,
+                    "machine_name": mname,
+                    "total_requests": 0,
+                    "total_input_tokens": 0,
+                    "total_output_tokens": 0,
+                    "total_tokens": 0,
+                    "daily": {}
+                }
+            pc_entry = pc_map[pc_key]
+            pc_entry["total_requests"] += reqs
+            pc_entry["total_input_tokens"] += in_tok
+            pc_entry["total_output_tokens"] += out_tok
+            pc_entry["total_tokens"] += tot_tok
+            pc_entry["daily"][d] = {
+                "requests": reqs,
+                "input_tokens": in_tok,
+                "output_tokens": out_tok,
+                "total_tokens": tot_tok,
+            }
+
+        pc_series = sorted(
+            pc_map.values(),
+            key=lambda x: (x["total_tokens"], x["total_requests"]),
+            reverse=True
+        )
+
+        # 3. Chart theo từng Model A.I là tổng số theo ngày của từng Model A.I (by_model)
+        cursor.execute(f"""
+            SELECT DATE(timestamp) AS date,
+                   model,
+                   provider,
+                   COUNT(*) AS requests,
+                   COALESCE(SUM(input_tokens), 0) AS input_tokens,
+                   COALESCE(SUM(output_tokens), 0) AS output_tokens,
+                   COALESCE(SUM(total_tokens), 0) AS total_tokens
+            FROM llm_audit_log
+            {where_sql}
+            GROUP BY DATE(timestamp), model, provider
+            ORDER BY DATE(timestamp) ASC, total_tokens DESC
+        """, tuple(params))
+        by_model = []
+        model_map: Dict[str, Dict[str, Any]] = {}
+        for r in cursor.fetchall():
+            row = dict(r)
+            d = row.get("date") or ""
+            if not d:
+                continue
+            model_name = row.get("model") or "-"
+            provider_name = row.get("provider") or "unknown"
+            reqs = int(row.get("requests", 0) or 0)
+            in_tok = int(row.get("input_tokens", 0) or 0)
+            out_tok = int(row.get("output_tokens", 0) or 0)
+            tot_tok = int(row.get("total_tokens", 0) or 0)
+
+            # Bỏ qua control-plane ('-') nếu 0 token để biểu đồ Model AI không bị nhiễu
+            if model_name in ("-", "unknown", "") and tot_tok == 0:
+                continue
+
+            dates_set.add(d)
+            item = {
+                "date": d,
+                "model": model_name,
+                "provider": provider_name,
+                "requests": reqs,
+                "input_tokens": in_tok,
+                "output_tokens": out_tok,
+                "total_tokens": tot_tok,
+            }
+            by_model.append(item)
+
+            model_key = f"{provider_name}:{model_name}"
+            if model_key not in model_map:
+                model_map[model_key] = {
+                    "model_key": model_key,
+                    "label": f"{model_name} ({provider_name})",
+                    "model": model_name,
+                    "provider": provider_name,
+                    "total_requests": 0,
+                    "total_input_tokens": 0,
+                    "total_output_tokens": 0,
+                    "total_tokens": 0,
+                    "daily": {}
+                }
+            m_entry = model_map[model_key]
+            m_entry["total_requests"] += reqs
+            m_entry["total_input_tokens"] += in_tok
+            m_entry["total_output_tokens"] += out_tok
+            m_entry["total_tokens"] += tot_tok
+            m_entry["daily"][d] = {
+                "requests": reqs,
+                "input_tokens": in_tok,
+                "output_tokens": out_tok,
+                "total_tokens": tot_tok,
+            }
+
+        model_series = sorted(
+            model_map.values(),
+            key=lambda x: (x["total_tokens"], x["total_requests"]),
+            reverse=True
+        )
+
+        dates = sorted(dates_set)
+
+        return {
+            "from_date": clean_from,
+            "to_date": clean_to,
+            "min_date": min_date,
+            "max_date": max_date,
+            "dates": dates,
+            "by_day": by_day,
+            "by_pc": by_pc,
+            "pc_series": pc_series,
+            "by_model": by_model,
+            "model_series": model_series,
         }
 
 def get_client_active_violation(client_ip: str, client_mac: str = "") -> Optional[Dict[str, Any]]:

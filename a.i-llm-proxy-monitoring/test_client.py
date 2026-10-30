@@ -782,6 +782,158 @@ class TestLLMProxy(unittest.TestCase):
         self.assertIn('function toggleTheme()', html)
         self.assertIn('function applyTheme(', html)
 
+    def test_28_split_alltime_and_daily_token_stats(self):
+        """Kiểm thử thống kê Tokens theo 4 chỉ số (All-Time, Hôm nay, Tuần này, Tháng này) cho toàn hệ thống, Máy Trạm LAN và Model AI"""
+        from database import get_connection
+        test_ip = "10.77.77.77"
+        test_mac = "02:00:00:77:77:01"
+        test_model = "gemini-test-horizons"
+        with get_connection() as conn:
+            cur = conn.cursor()
+            # 1. Bản ghi cách đây 60 ngày (chỉ tính vào All-Time, không thuộc Tháng này / Tuần này / Hôm nay)
+            cur.execute("""
+                INSERT INTO llm_audit_log (
+                    timestamp, client_ip, client_mac, machine_name, provider, model,
+                    endpoint, status_code, action, input_tokens, output_tokens, total_tokens, latency_ms, error_message
+                ) VALUES (DATETIME('now', '-60 days'), ?, ?, 'Horizon-PC', 'google', ?,
+                          'v1internal:streamGenerateContent', 200, 'ALLOWED', 1000, 500, 1500, 50, '')
+            """, (test_ip, test_mac, test_model))
+            # 2. Bản ghi ngày hôm nay (tính vào cả All-Time, Tháng này, Tuần này, Hôm nay)
+            cur.execute("""
+                INSERT INTO llm_audit_log (
+                    timestamp, client_ip, client_mac, machine_name, provider, model,
+                    endpoint, status_code, action, input_tokens, output_tokens, total_tokens, latency_ms, error_message
+                ) VALUES (DATETIME('now'), ?, ?, 'Horizon-PC', 'google', ?,
+                          'v1internal:streamGenerateContent', 200, 'ALLOWED', 300, 200, 500, 40, '')
+            """, (test_ip, test_mac, test_model))
+            conn.commit()
+
+        try:
+            res = self.client.get("/api/stats")
+            self.assertEqual(res.status_code, 200)
+            data = res.json()
+            for key in ("totals", "today", "week", "month", "usage_by_client", "usage_by_model"):
+                self.assertIn(key, data)
+
+            totals = data["totals"]
+            today = data["today"]
+            week = data["week"]
+            month = data["month"]
+
+            # All-time phải lớn hơn Today/Week/Month ít nhất 1500 tokens (bản ghi 60 ngày trước)
+            self.assertGreaterEqual(totals["total_input_tokens"] - today["input_tokens"], 1000)
+            self.assertGreaterEqual(totals["total_output_tokens"] - today["output_tokens"], 500)
+            self.assertGreaterEqual(totals["total_tokens"] - today["total_tokens"], 1500)
+            self.assertGreaterEqual(totals["total_tokens"] - week["total_tokens"], 1500)
+            self.assertGreaterEqual(totals["total_tokens"] - month["total_tokens"], 1500)
+
+            self.assertGreaterEqual(today["total_tokens"], 500)
+            self.assertGreaterEqual(week["total_tokens"], 500)
+            self.assertGreaterEqual(month["total_tokens"], 500)
+
+            # Kiểm tra chỉ số 4 mốc cho từng Máy Trạm Mạng LAN (usage_by_client)
+            client_row = next((c for c in data["usage_by_client"] if c["client_ip"] == test_ip), None)
+            self.assertIsNotNone(client_row)
+            self.assertEqual(client_row["today_tokens"], 500)
+            self.assertEqual(client_row["week_tokens"], 500)
+            self.assertEqual(client_row["month_tokens"], 500)
+            self.assertEqual(client_row["alltime_tokens"], 2000)
+            self.assertEqual(client_row["alltime_input_tokens"], 1300)
+            self.assertEqual(client_row["alltime_output_tokens"], 700)
+
+            # Kiểm tra chỉ số 4 mốc cho từng Model AI (usage_by_model)
+            model_row = next((m for m in data["usage_by_model"] if m["model"] == test_model), None)
+            self.assertIsNotNone(model_row)
+            self.assertEqual(model_row["today_tokens"], 500)
+            self.assertEqual(model_row["week_tokens"], 500)
+            self.assertEqual(model_row["month_tokens"], 500)
+            self.assertEqual(model_row["alltime_tokens"], 2000)
+
+            # Kiểm tra giao diện HTML có đủ 4 khu vực tổng quan và cột bảng
+            html = self.client.get("/").text
+            for section_id in ("token-section-alltime", "token-section-today", "token-section-week", "token-section-month"):
+                self.assertIn(f'id="{section_id}"', html)
+            for stat_id in ("stat-total-tokens", "stat-today-tokens", "stat-week-tokens", "stat-month-tokens"):
+                self.assertIn(f'id="{stat_id}"', html)
+        finally:
+            with get_connection() as conn:
+                conn.cursor().execute("DELETE FROM llm_audit_log WHERE client_ip = ?", (test_ip,))
+                conn.commit()
+
+    def test_29_charts_total_tokens_tab_and_date_filter(self):
+        """Kiểm thử tab Charts tổng tokens và API /api/charts (mặc định Show All + lọc từ ngày đến ngày)"""
+        from database import get_connection
+        test_ip = "192.168.99.202"
+        test_mac = "02:00:00:99:02:02"
+        test_model = "claude-3-7-sonnet-chart-test"
+        day_old = "2026-01-15"
+        day_recent = "2026-02-20"
+
+        with get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                INSERT INTO llm_audit_log (
+                    timestamp, client_ip, client_mac, machine_name, provider, model,
+                    endpoint, status_code, action, input_tokens, output_tokens, total_tokens, latency_ms, error_message
+                ) VALUES (?, ?, ?, 'Chart-PC-1', 'anthropic', ?,
+                          '/v1/messages', 200, 'ALLOWED', 600, 400, 1000, 35, '')
+            """, (f"{day_old} 10:00:00", test_ip, test_mac, test_model))
+            cur.execute("""
+                INSERT INTO llm_audit_log (
+                    timestamp, client_ip, client_mac, machine_name, provider, model,
+                    endpoint, status_code, action, input_tokens, output_tokens, total_tokens, latency_ms, error_message
+                ) VALUES (?, ?, ?, 'Chart-PC-1', 'anthropic', ?,
+                          '/v1/messages', 200, 'ALLOWED', 1200, 800, 2000, 45, '')
+            """, (f"{day_recent} 15:30:00", test_ip, test_mac, test_model))
+            conn.commit()
+
+        try:
+            # 1. Mặc định không chọn ngày -> Show All
+            res_all = self.client.get("/api/charts")
+            self.assertEqual(res_all.status_code, 200)
+            data_all = res_all.json()
+            self.assertEqual(data_all["from_date"], "")
+            self.assertEqual(data_all["to_date"], "")
+            self.assertIn(day_old, data_all["dates"])
+            self.assertIn(day_recent, data_all["dates"])
+
+            pc_entry = next((p for p in data_all["pc_series"] if p["client_ip"] == test_ip), None)
+            self.assertIsNotNone(pc_entry)
+            self.assertEqual(pc_entry["total_tokens"], 3000)
+            self.assertEqual(pc_entry["daily"][day_old]["total_tokens"], 1000)
+            self.assertEqual(pc_entry["daily"][day_recent]["total_tokens"], 2000)
+
+            model_entry = next((m for m in data_all["model_series"] if m["model"] == test_model), None)
+            self.assertIsNotNone(model_entry)
+            self.assertEqual(model_entry["total_tokens"], 3000)
+
+            # 2. Chọn lọc từ ngày đến ngày (chỉ lấy day_recent)
+            res_filtered = self.client.get(f"/api/charts?from_date={day_recent}&to_date={day_recent}")
+            self.assertEqual(res_filtered.status_code, 200)
+            data_filtered = res_filtered.json()
+            self.assertEqual(data_filtered["from_date"], day_recent)
+            self.assertEqual(data_filtered["to_date"], day_recent)
+            self.assertEqual(data_filtered["dates"], [day_recent])
+
+            pc_filtered = next((p for p in data_filtered["pc_series"] if p["client_ip"] == test_ip), None)
+            self.assertIsNotNone(pc_filtered)
+            self.assertEqual(pc_filtered["total_tokens"], 2000)
+
+            # 3. Kiểm tra giao diện HTML có tab Charts tổng tokens và 3 biểu đồ dạng Line Chart
+            html = self.client.get("/").text
+            for elem_id in (
+                "tab-charts", "view-charts", "chart-from-date", "chart-to-date",
+                "chart-total-by-day", "chart-by-pc", "chart-by-model"
+            ):
+                self.assertIn(f'id="{elem_id}"', html)
+            self.assertIn("chart-line-path", html)
+            self.assertIn("chart-line-point", html)
+            self.assertIn("<polyline", html)
+        finally:
+            with get_connection() as conn:
+                conn.cursor().execute("DELETE FROM llm_audit_log WHERE client_ip = ?", (test_ip,))
+                conn.commit()
+
 if __name__ == "__main__":
     unittest.main()
 

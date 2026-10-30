@@ -357,52 +357,346 @@
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
             gap: 16px;
-            margin-bottom: 24px;
+            margin-bottom: 16px;
         }
 
-        .stat-card {
-            background-color: var(--bg-surface);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 18px;
-            position: relative;
-            overflow: hidden;
-            box-shadow: var(--card-shadow);
-            transition: background-color 0.25s ease, border-color 0.25s ease;
-        }
-
-        .stat-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 4px;
-            height: 100%;
-            background-color: var(--card-accent, var(--accent-blue));
-        }
-
-        .stat-label {
-            font-size: 12.5px;
-            color: var(--text-secondary);
-            font-weight: 500;
-        }
-
-        .stat-value {
-            font-size: 26px;
-            font-weight: 700;
-            margin-top: 8px;
-            font-family: 'JetBrains Mono', monospace;
-        }
-
-        .grid-tables {
+        /* Split Token Stats: 1. Tổng tất cả từ lúc chạy | 2. Tổng theo ngày hiện tại */
+        .token-stats-split {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: repeat(auto-fit, minmax(460px, 1fr));
             gap: 20px;
             margin-bottom: 24px;
         }
 
         @media (max-width: 992px) {
-            .grid-tables { grid-template-columns: 1fr; }
+            .token-stats-split {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .token-group-panel {
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 14px 16px 16px;
+            box-shadow: var(--card-shadow);
+            transition: background-color 0.25s ease, border-color 0.25s ease;
+            min-inline-size: 0;
+        }
+
+        .token-group-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: safe center;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px dashed var(--border-color);
+        }
+
+        .token-group-title {
+            font-size: 13.5px;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: inline-flex;
+            align-items: safe center;
+            gap: 7px;
+        }
+
+        .token-group-badge {
+            font-size: 11.5px;
+            font-weight: 600;
+            padding: 3px 9px;
+            border-radius: 20px;
+            font-family: 'JetBrains Mono', monospace;
+            display: inline-block;
+            white-space: nowrap;
+        }
+
+        /* Compact Summary Table (4 Time Horizons) */
+        .table-wrapper {
+            overflow: auto;
+            max-inline-size: 100%;
+            container-type: inline-size;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+        }
+
+        .table-wrapper:focus-visible {
+            outline: 2px solid var(--accent-blue);
+            outline-offset: 2px;
+        }
+
+        .summary-horizon-table {
+            inline-size: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 13px;
+        }
+
+        .summary-horizon-table thead {
+            position: sticky;
+            inset-block-start: 0;
+            z-index: 2;
+            background-color: var(--bg-card);
+        }
+
+        .summary-horizon-table th,
+        .summary-horizon-table td {
+            padding: 10px 14px;
+            border-block-end: 1px solid var(--border-subtle);
+            white-space: nowrap;
+        }
+
+        .summary-horizon-table thead th {
+            font-size: 11.5px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            color: var(--text-secondary);
+            border-block-end: 1px solid var(--border-color);
+            background-color: var(--bg-card);
+        }
+
+        .summary-horizon-table tbody th {
+            position: sticky;
+            inset-inline-start: 0;
+            z-index: 1;
+            background-color: var(--bg-surface);
+            color: var(--text-primary);
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            border-inline-end: 1px solid var(--border-subtle);
+        }
+
+        .summary-horizon-table tbody tr:last-child th,
+        .summary-horizon-table tbody tr:last-child td {
+            border-block-end: none;
+        }
+
+        .summary-horizon-table tbody tr:hover th,
+        .summary-horizon-table tbody tr:hover td {
+            background-color: var(--table-hover);
+        }
+
+        .summary-horizon-table .num-col {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* ==================== CHARTS TAB STYLES ==================== */
+        .chart-filter-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 14px;
+        }
+
+        .chart-date-inputs {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .chart-date-group {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 5px 10px;
+        }
+
+        .chart-date-group label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+
+        .chart-date-input {
+            background: var(--input-bg);
+            color: var(--text-primary);
+            border: 1px solid var(--input-border);
+            border-radius: 6px;
+            padding: 5px 8px;
+            font-size: 12.5px;
+            font-family: 'JetBrains Mono', monospace;
+            accent-color: var(--accent-blue);
+            color-scheme: light dark;
+            outline: none;
+        }
+
+        .chart-date-input:focus {
+            border-color: var(--accent-blue);
+        }
+
+        .chart-svg-container {
+            inline-size: 100%;
+            overflow-x: auto;
+            padding: 8px 0 4px;
+        }
+
+        .chart-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-block-end: 12px;
+        }
+
+        .chart-legend-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .chart-legend-item:hover {
+            border-color: var(--accent-blue);
+            transform: translateY(-1px);
+        }
+
+        .chart-legend-dot {
+            inline-size: 10px;
+            block-size: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .chart-bar-rect {
+            transition: opacity 0.15s ease, filter 0.15s ease;
+            cursor: pointer;
+        }
+
+        .chart-bar-rect:hover {
+            filter: brightness(1.12);
+        }
+
+        .chart-line-group {
+            transition: opacity 0.2s ease;
+        }
+
+        .chart-line-path {
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            transition: stroke-width 0.15s ease, opacity 0.2s ease;
+        }
+
+        .chart-line-point {
+            cursor: pointer;
+            transition: r 0.15s ease, stroke-width 0.15s ease;
+        }
+
+        .chart-line-point:hover {
+            r: 6.5px;
+            stroke-width: 3px;
+        }
+
+        .chart-svg-has-focus .chart-line-group:not(.is-focused) {
+            opacity: 0.18;
+        }
+
+        .chart-svg-has-focus .chart-line-group.is-focused .chart-line-path {
+            stroke-width: 3.5px;
+        }
+
+        .token-group-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+            grid-auto-rows: auto;
+            gap: 12px;
+        }
+
+        .stat-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 14px 16px;
+            position: relative;
+            box-shadow: var(--card-shadow);
+            transition: background-color 0.25s ease, border-color 0.25s ease;
+            min-inline-size: 0;
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+            grid-template-rows: subgrid;
+            grid-row: span 3;
+        }
+
+        .grid-stats > .stat-card {
+            background-color: var(--bg-surface);
+            border-radius: 12px;
+            padding: 16px 18px;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            inset-block-start: 0;
+            inset-inline-start: 0;
+            inline-size: 4px;
+            block-size: 100%;
+            border-start-start-radius: inherit;
+            border-end-start-radius: inherit;
+            background-color: var(--card-accent, var(--accent-blue));
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 600;
+            letter-spacing: 0.02em;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            margin-block-start: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            overflow-wrap: anywhere;
+        }
+
+        .stat-sub {
+            font-size: 11.5px;
+            color: var(--text-secondary);
+            margin-block-start: 6px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .grid-tables {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .period-metric-cell {
+            line-height: 1.45;
+            min-inline-size: 155px;
+        }
+
+        .period-metric-main {
+            font-size: 13.5px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .period-metric-sub {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-block-start: 2px;
         }
 
         .card {
@@ -890,35 +1184,88 @@
             <button class="nav-tab" id="tab-policy" onclick="switchTab('policy')">
                 🛡️ Ma Trận Phân Quyền & Quota (Policy Matrix)
             </button>
+            <button class="nav-tab" id="tab-charts" onclick="switchTab('charts')">
+                📈 Charts Tổng Tokens
+            </button>
         </div>
 
         <!-- ==================== VIEW 1: MONITORING ==================== -->
         <div id="view-monitoring">
-            <!-- Stats Grid -->
-            <div class="grid-stats">
-                <div class="stat-card" style="--card-accent: var(--accent-blue);">
-                    <div class="stat-label">TỔNG REQUESTS</div>
-                    <div class="stat-value" id="stat-total-requests">0</div>
+            <!-- Compact Table: Global Requests & Tokens by 4 Time Horizons -->
+            <div class="card" style="padding: 16px 20px; margin-bottom: 20px;">
+                <div class="card-header" style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                    <h2 class="card-title" id="token-summary-table-title">📊 Thống Kê Tổng Token &amp; Requests Theo 4 Chỉ Số Thời Gian</h2>
+                    <span style="font-size: 12px; color: var(--text-secondary);">Hôm nay · Tuần này · Tháng này · Tất cả từ lúc chạy</span>
                 </div>
-                <div class="stat-card" style="--card-accent: var(--accent-green);">
-                    <div class="stat-label">HỢP LỆ (ALLOWED)</div>
-                    <div class="stat-value" style="color: var(--accent-green);" id="stat-success-requests">0</div>
-                </div>
-                <div class="stat-card" style="--card-accent: var(--accent-red);">
-                    <div class="stat-label">BỊ CHẶN (BLOCKED)</div>
-                    <div class="stat-value" style="color: var(--accent-red);" id="stat-blocked-requests">0</div>
-                </div>
-                <div class="stat-card" style="--card-accent: var(--accent-cyan);">
-                    <div class="stat-label">INPUT TOKENS HÔM NAY</div>
-                    <div class="stat-value" id="stat-input-tokens">0</div>
-                </div>
-                <div class="stat-card" style="--card-accent: var(--accent-orange);">
-                    <div class="stat-label">OUTPUT TOKENS HÔM NAY</div>
-                    <div class="stat-value" id="stat-output-tokens">0</div>
-                </div>
-                <div class="stat-card" style="--card-accent: var(--accent-purple);">
-                    <div class="stat-label">TỔNG TOKENS TIÊU THỤ</div>
-                    <div class="stat-value" style="color: var(--accent-purple);" id="stat-total-tokens">0</div>
+                <div tabindex="0" role="region" aria-labelledby="token-summary-table-title" class="table-wrapper">
+                    <table class="summary-horizon-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Chỉ Số Thời Gian</th>
+                                <th scope="col">Mốc Thời Gian</th>
+                                <th scope="col" class="num-col">Tổng Requests</th>
+                                <th scope="col" class="num-col">Hợp Lệ (Allowed)</th>
+                                <th scope="col" class="num-col">Bị Chặn (Blocked)</th>
+                                <th scope="col" class="num-col">Input Tokens</th>
+                                <th scope="col" class="num-col">Output Tokens</th>
+                                <th scope="col" class="num-col">Tổng Tokens Tiêu Thụ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- 1. TỔNG THEO NGÀY HIỆN TẠI (TODAY) -->
+                            <tr id="token-section-today">
+                                <th scope="row">📅 Tổng Theo Ngày Hiện Tại (Hôm Nay)</th>
+                                <td>
+                                    <span class="token-group-badge" id="stat-today-date-badge" style="background: var(--badge-cyan-bg); color: var(--badge-cyan-text); border: 1px solid var(--badge-cyan-border);">Hôm nay</span>
+                                </td>
+                                <td class="num-col" style="font-weight: 700;" id="stat-today-requests">0</td>
+                                <td class="num-col" style="color: var(--accent-green); font-weight: 700;" id="stat-today-success-requests">0</td>
+                                <td class="num-col" style="color: var(--accent-red); font-weight: 700;" id="stat-today-blocked-requests">0</td>
+                                <td class="num-col" style="color: var(--accent-cyan); font-weight: 700;" id="stat-input-tokens">0</td>
+                                <td class="num-col" style="color: var(--accent-orange); font-weight: 700;" id="stat-output-tokens">0</td>
+                                <td class="num-col" style="color: var(--accent-purple); font-weight: 700; font-size: 14px;" id="stat-today-tokens">0</td>
+                            </tr>
+                            <!-- 2. TỔNG THEO TUẦN HIỆN TẠI (THIS WEEK) -->
+                            <tr id="token-section-week">
+                                <th scope="row">📆 Tổng Theo Tuần Hiện Tại (Tuần Này)</th>
+                                <td>
+                                    <span class="token-group-badge" id="stat-week-date-badge" style="background: var(--badge-allowed-bg); color: var(--badge-allowed-text); border: 1px solid var(--badge-allowed-border);">Tuần này</span>
+                                </td>
+                                <td class="num-col" style="font-weight: 700;" id="stat-week-requests">0</td>
+                                <td class="num-col" style="color: var(--accent-green); font-weight: 700;" id="stat-week-success-requests">0</td>
+                                <td class="num-col" style="color: var(--accent-red); font-weight: 700;" id="stat-week-blocked-requests">0</td>
+                                <td class="num-col" style="color: var(--accent-cyan); font-weight: 700;" id="stat-week-input-tokens">0</td>
+                                <td class="num-col" style="color: var(--accent-orange); font-weight: 700;" id="stat-week-output-tokens">0</td>
+                                <td class="num-col" style="color: var(--accent-purple); font-weight: 700; font-size: 14px;" id="stat-week-tokens">0</td>
+                            </tr>
+                            <!-- 3. TỔNG THEO THÁNG HIỆN TẠI (THIS MONTH) -->
+                            <tr id="token-section-month">
+                                <th scope="row">🗓️ Tổng Theo Tháng Hiện Tại (Tháng Này)</th>
+                                <td>
+                                    <span class="token-group-badge" id="stat-month-date-badge" style="background: var(--badge-amber-bg); color: var(--badge-amber-text); border: 1px solid var(--badge-amber-border);">Tháng này</span>
+                                </td>
+                                <td class="num-col" style="font-weight: 700;" id="stat-month-requests">0</td>
+                                <td class="num-col" style="color: var(--accent-green); font-weight: 700;" id="stat-month-success-requests">0</td>
+                                <td class="num-col" style="color: var(--accent-red); font-weight: 700;" id="stat-month-blocked-requests">0</td>
+                                <td class="num-col" style="color: var(--accent-cyan); font-weight: 700;" id="stat-month-input-tokens">0</td>
+                                <td class="num-col" style="color: var(--accent-orange); font-weight: 700;" id="stat-month-output-tokens">0</td>
+                                <td class="num-col" style="color: var(--accent-purple); font-weight: 700; font-size: 14px;" id="stat-month-tokens">0</td>
+                            </tr>
+                            <!-- 4. TỔNG TẤT CẢ TỪ LÚC CHẠY (ALL-TIME) -->
+                            <tr id="token-section-alltime">
+                                <th scope="row">🌐 Tổng Tất Cả Từ Lúc Chạy (All-Time)</th>
+                                <td>
+                                    <span class="token-group-badge" style="background: var(--badge-model-bg); color: var(--badge-model-text); border: 1px solid var(--badge-model-border);">Lũy kế toàn bộ</span>
+                                </td>
+                                <td class="num-col" style="font-weight: 700;" id="stat-total-requests">0</td>
+                                <td class="num-col" style="color: var(--accent-green); font-weight: 700;" id="stat-success-requests">0</td>
+                                <td class="num-col" style="color: var(--accent-red); font-weight: 700;" id="stat-blocked-requests">0</td>
+                                <td class="num-col" style="color: var(--accent-cyan); font-weight: 700;" id="stat-total-input-tokens">0</td>
+                                <td class="num-col" style="color: var(--accent-orange); font-weight: 700;" id="stat-total-output-tokens">0</td>
+                                <td class="num-col" style="color: var(--accent-purple); font-weight: 700; font-size: 14px;" id="stat-total-tokens">0</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
@@ -926,21 +1273,21 @@
             <div class="grid-tables">
                 <!-- Usage by Workstation -->
                 <div class="card">
-                    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
-                        <h2 class="card-title">🖥️ Máy Trạm Mạng LAN (IP & MAC)</h2>
+                    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                        <h2 class="card-title">🖥️ Máy Trạm Mạng LAN (IP & MAC) — Thống Kê Tổng Token Theo 4 Chỉ Số</h2>
                         <span id="clients-violation-badge" style="display: none;" class="badge badge-blocked">🚨 Có máy trạm vi phạm</span>
                     </div>
-                    <div id="clients-violation-alert" style="display: none; margin: 12px; padding: 10px 14px; border-radius: 8px; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); color: #fca5a5; font-size: 12.5px; line-height: 1.5;"></div>
+                    <div id="clients-violation-alert" style="display: none; margin: 12px 0; padding: 10px 14px; border-radius: 8px; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); color: #fca5a5; font-size: 12.5px; line-height: 1.5;"></div>
                     <div style="overflow-x: auto;">
                         <table>
                             <thead>
                                 <tr>
-                                    <th>IP LAN</th>
-                                    <th>MAC Address</th>
-                                    <th>Tên Máy</th>
+                                    <th>Máy Trạm (IP / MAC / Tên)</th>
                                     <th>Trạng Thái & Vi Phạm</th>
-                                    <th>Requests</th>
-                                    <th>Tokens / Quota</th>
+                                    <th>📅 Hôm Nay (Today / Quota)</th>
+                                    <th>📆 Tuần Này (This Week)</th>
+                                    <th>🗓️ Tháng Này (This Month)</th>
+                                    <th>🌐 Tất Cả (All-Time)</th>
                                     <th>Thao Tác</th>
                                 </tr>
                             </thead>
@@ -953,22 +1300,26 @@
 
                 <!-- Usage by Model -->
                 <div class="card">
-                    <div class="card-header">
-                        <h2 class="card-title">🤖 Thống Kê Theo Model AI</h2>
+                    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                        <h2 class="card-title">🤖 Thống Kê Theo Model AI — Thống Kê Tổng Token Theo 4 Chỉ Số</h2>
                     </div>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Model</th>
-                                <th>Provider</th>
-                                <th>Requests</th>
-                                <th>Tổng Tokens</th>
-                            </tr>
-                        </thead>
-                        <tbody id="models-table-body">
-                            <tr><td colspan="4" class="empty-hint">Chưa có dữ liệu model</td></tr>
-                        </tbody>
-                    </table>
+                    <div style="overflow-x: auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Model AI</th>
+                                    <th>Provider</th>
+                                    <th>📅 Hôm Nay (Today)</th>
+                                    <th>📆 Tuần Này (This Week)</th>
+                                    <th>🗓️ Tháng Này (This Month)</th>
+                                    <th>🌐 Tất Cả (All-Time)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="models-table-body">
+                                <tr><td colspan="6" class="empty-hint">Chưa có dữ liệu model</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
@@ -1169,6 +1520,145 @@
                         </thead>
                         <tbody id="mcp-servers-body">
                             <tr><td colspan="6" class="empty-hint">Đang tải danh sách MCP Server...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== VIEW 3: CHARTS TỔNG TOKENS ==================== -->
+        <div id="view-charts" style="display: none;">
+            <!-- Date Range Filter Toolbar (Default: empty = Show All) -->
+            <div class="card" style="padding: 16px 20px; margin-bottom: 20px;">
+                <div class="chart-filter-bar">
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                            <h2 class="card-title" style="margin: 0;">📈 Bộ Lọc Khoảng Ngày Cho Các Biểu Đồ (Charts Tổng Tokens)</h2>
+                            <span class="token-group-badge" id="chart-range-badge" style="background: var(--badge-cyan-bg); color: var(--badge-cyan-text); border: 1px solid var(--badge-cyan-border);">
+                                🌐 Tất cả các ngày (Show All)
+                            </span>
+                        </div>
+                        <p style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
+                            Mặc định để trống Từ ngày / Đến ngày để hiển thị toàn bộ lịch sử (Show All) cho cả 3 biểu đồ bên dưới.
+                        </p>
+                    </div>
+                    <div class="chart-date-inputs">
+                        <div class="chart-date-group">
+                            <label for="chart-from-date">Từ ngày:</label>
+                            <input type="date" id="chart-from-date" class="chart-date-input" onchange="fetchChartsData()">
+                        </div>
+                        <div class="chart-date-group">
+                            <label for="chart-to-date">Đến ngày:</label>
+                            <input type="date" id="chart-to-date" class="chart-date-input" onchange="fetchChartsData()">
+                        </div>
+                        <button type="button" class="btn btn-primary" onclick="fetchChartsData()">
+                            🔍 Lọc theo ngày
+                        </button>
+                        <button type="button" class="btn" id="btn-chart-show-all" onclick="resetChartDateFilter()" title="Xóa bộ lọc ngày để hiển thị toàn bộ lịch sử">
+                            🌐 Mặc định: Show All
+                        </button>
+                        <button type="button" class="btn-xs" onclick="setChartDatePreset(7)">7 ngày</button>
+                        <button type="button" class="btn-xs" onclick="setChartDatePreset(30)">30 ngày</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CHART 1: Chart theo tổng tất cả theo ngày -->
+            <div class="card" id="chart-card-total-by-day">
+                <div class="card-header" style="flex-wrap: wrap; gap: 10px;">
+                    <div>
+                        <h2 class="card-title">📊 1. Chart Theo Tổng Tất Cả Theo Ngày</h2>
+                        <p style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">
+                            Tổng số Tokens tiêu thụ (Input + Output) của toàn bộ hệ thống qua từng ngày
+                        </p>
+                    </div>
+                    <div id="chart-total-summary-badges" style="display: flex; gap: 8px; flex-wrap: wrap;"></div>
+                </div>
+                <div id="chart-total-by-day" class="chart-svg-container">
+                    <div class="empty-hint">Đang tải biểu đồ tổng tất cả theo ngày...</div>
+                </div>
+                <div tabindex="0" role="region" aria-label="Bảng chi tiết tổng token theo ngày" class="table-wrapper" style="margin-top: 12px; max-height: 240px;">
+                    <table class="summary-horizon-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Ngày (YYYY-MM-DD)</th>
+                                <th scope="col" class="num-col">Tổng Requests</th>
+                                <th scope="col" class="num-col">Input Tokens</th>
+                                <th scope="col" class="num-col">Output Tokens</th>
+                                <th scope="col" class="num-col">Tổng Tokens Tiêu Thụ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="chart-total-table-body">
+                            <tr><td colspan="5" class="empty-hint">Chưa có dữ liệu...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- CHART 2: Chart theo từng PC là tổng số theo ngày của từng PC -->
+            <div class="card" id="chart-card-by-pc">
+                <div class="card-header" style="flex-wrap: wrap; gap: 10px;">
+                    <div>
+                        <h2 class="card-title">🖥️ 2. Chart Theo Từng PC (Tổng Số Theo Ngày Của Từng PC)</h2>
+                        <p style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">
+                            So sánh và theo dõi tổng lượng Tokens tiêu thụ theo từng ngày của mỗi Máy Trạm Mạng LAN (IP &amp; MAC)
+                        </p>
+                    </div>
+                    <span id="chart-pc-count-badge" class="badge badge-provider">0 PC</span>
+                </div>
+                <div id="chart-pc-legend" class="chart-legend"></div>
+                <div id="chart-by-pc" class="chart-svg-container">
+                    <div class="empty-hint">Đang tải biểu đồ theo từng PC...</div>
+                </div>
+                <div tabindex="0" role="region" aria-label="Bảng chi tiết token theo ngày của từng PC" class="table-wrapper" style="margin-top: 12px; max-height: 260px;">
+                    <table class="summary-horizon-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Ngày</th>
+                                <th scope="col">Máy Trạm PC (Tên / IP / MAC)</th>
+                                <th scope="col" class="num-col">Requests</th>
+                                <th scope="col" class="num-col">Input Tokens</th>
+                                <th scope="col" class="num-col">Output Tokens</th>
+                                <th scope="col" class="num-col">Tổng Tokens Ngày</th>
+                            </tr>
+                        </thead>
+                        <tbody id="chart-pc-table-body">
+                            <tr><td colspan="6" class="empty-hint">Chưa có dữ liệu...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- CHART 3: Chart theo từng Model A.I là tổng số theo ngày của từng Model A.I -->
+            <div class="card" id="chart-card-by-model">
+                <div class="card-header" style="flex-wrap: wrap; gap: 10px;">
+                    <div>
+                        <h2 class="card-title">🤖 3. Chart Theo Từng Model A.I (Tổng Số Theo Ngày Của Từng Model A.I)</h2>
+                        <p style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">
+                            So sánh và theo dõi tổng lượng Tokens tiêu thụ theo từng ngày của mỗi Model A.I &amp; Nhà cung cấp Cloud
+                        </p>
+                    </div>
+                    <span id="chart-model-count-badge" class="badge badge-model">0 Model</span>
+                </div>
+                <div id="chart-model-legend" class="chart-legend"></div>
+                <div id="chart-by-model" class="chart-svg-container">
+                    <div class="empty-hint">Đang tải biểu đồ theo từng Model A.I...</div>
+                </div>
+                <div tabindex="0" role="region" aria-label="Bảng chi tiết token theo ngày của từng Model AI" class="table-wrapper" style="margin-top: 12px; max-height: 260px;">
+                    <table class="summary-horizon-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Ngày</th>
+                                <th scope="col">Model A.I</th>
+                                <th scope="col">Provider</th>
+                                <th scope="col" class="num-col">Requests</th>
+                                <th scope="col" class="num-col">Input Tokens</th>
+                                <th scope="col" class="num-col">Output Tokens</th>
+                                <th scope="col" class="num-col">Tổng Tokens Ngày</th>
+                            </tr>
+                        </thead>
+                        <tbody id="chart-model-table-body">
+                            <tr><td colspan="7" class="empty-hint">Chưa có dữ liệu...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -1444,17 +1934,30 @@
 
         function switchTab(tab) {
             document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
-            if (tab === 'monitoring') {
-                document.getElementById('tab-monitoring').classList.add('active');
-                document.getElementById('view-monitoring').style.display = 'block';
-                document.getElementById('view-policy').style.display = 'none';
-                try { localStorage.setItem('llm_proxy_active_tab', 'monitoring'); } catch(e){}
-            } else {
-                document.getElementById('tab-policy').classList.add('active');
-                document.getElementById('view-monitoring').style.display = 'none';
-                document.getElementById('view-policy').style.display = 'block';
+            const vMon = document.getElementById('view-monitoring');
+            const vPol = document.getElementById('view-policy');
+            const vChr = document.getElementById('view-charts');
+            if (vMon) vMon.style.display = 'none';
+            if (vPol) vPol.style.display = 'none';
+            if (vChr) vChr.style.display = 'none';
+
+            if (tab === 'policy') {
+                const tPol = document.getElementById('tab-policy');
+                if (tPol) tPol.classList.add('active');
+                if (vPol) vPol.style.display = 'block';
                 try { localStorage.setItem('llm_proxy_active_tab', 'policy'); } catch(e){}
                 fetchPolicy();
+            } else if (tab === 'charts') {
+                const tChr = document.getElementById('tab-charts');
+                if (tChr) tChr.classList.add('active');
+                if (vChr) vChr.style.display = 'block';
+                try { localStorage.setItem('llm_proxy_active_tab', 'charts'); } catch(e){}
+                fetchChartsData();
+            } else {
+                const tMon = document.getElementById('tab-monitoring');
+                if (tMon) tMon.classList.add('active');
+                if (vMon) vMon.style.display = 'block';
+                try { localStorage.setItem('llm_proxy_active_tab', 'monitoring'); } catch(e){}
             }
         }
 
@@ -1469,16 +1972,86 @@
                 const stats = await statsRes.json();
                 const logs = await logsRes.json();
 
-                // Update Stats
+                // Update Stats: 4 chỉ số (All-Time, Hôm nay, Tuần này, Tháng này)
                 const t = stats.totals || {};
+                const td = stats.today || {};
+                const wk = stats.week || {};
+                const mo = stats.month || {};
+
+                const todayReqs = td.total_requests !== undefined ? td.total_requests : (t.today_requests || 0);
+                const todaySucc = td.successful_requests !== undefined ? td.successful_requests : (t.today_successful_requests || 0);
+                const todayBlk = td.blocked_requests !== undefined ? td.blocked_requests : (t.today_blocked_requests || 0);
+                const todayIn = td.input_tokens !== undefined ? td.input_tokens : (t.today_input_tokens || 0);
+                const todayOut = td.output_tokens !== undefined ? td.output_tokens : (t.today_output_tokens || 0);
+                const todayTot = td.total_tokens !== undefined ? td.total_tokens : (t.today_tokens || 0);
+                const todayDate = td.date || t.today_date || new Date().toISOString().slice(0, 10);
+
+                const weekReqs = wk.total_requests !== undefined ? wk.total_requests : (t.week_requests || 0);
+                const weekSucc = wk.successful_requests !== undefined ? wk.successful_requests : (t.week_successful_requests || 0);
+                const weekBlk = wk.blocked_requests !== undefined ? wk.blocked_requests : (t.week_blocked_requests || 0);
+                const weekIn = wk.input_tokens !== undefined ? wk.input_tokens : (t.week_input_tokens || 0);
+                const weekOut = wk.output_tokens !== undefined ? wk.output_tokens : (t.week_output_tokens || 0);
+                const weekTot = wk.total_tokens !== undefined ? wk.total_tokens : (t.week_tokens || 0);
+                const weekStart = wk.week_start || t.week_start || '';
+                const weekEnd = wk.week_end || t.week_end || '';
+
+                const monthReqs = mo.total_requests !== undefined ? mo.total_requests : (t.month_requests || 0);
+                const monthSucc = mo.successful_requests !== undefined ? mo.successful_requests : (t.month_successful_requests || 0);
+                const monthBlk = mo.blocked_requests !== undefined ? mo.blocked_requests : (t.month_blocked_requests || 0);
+                const monthIn = mo.input_tokens !== undefined ? mo.input_tokens : (t.month_input_tokens || 0);
+                const monthOut = mo.output_tokens !== undefined ? mo.output_tokens : (t.month_output_tokens || 0);
+                const monthTot = mo.total_tokens !== undefined ? mo.total_tokens : (t.month_tokens || 0);
+                const monthLabel = mo.month || t.month || todayDate.slice(0, 7);
+
                 document.getElementById('stat-total-requests').innerText = formatNumber(t.total_requests);
                 document.getElementById('stat-success-requests').innerText = formatNumber(t.successful_requests);
                 document.getElementById('stat-blocked-requests').innerText = formatNumber(t.blocked_requests);
-                document.getElementById('stat-input-tokens').innerText = formatNumber(t.total_input_tokens);
-                document.getElementById('stat-output-tokens').innerText = formatNumber(t.total_output_tokens);
+
+                document.getElementById('stat-today-requests').innerText = formatNumber(todayReqs);
+                document.getElementById('stat-today-success-requests').innerText = formatNumber(todaySucc);
+                document.getElementById('stat-today-blocked-requests').innerText = formatNumber(todayBlk);
+
+                document.getElementById('stat-week-requests').innerText = formatNumber(weekReqs);
+                document.getElementById('stat-week-success-requests').innerText = formatNumber(weekSucc);
+                document.getElementById('stat-week-blocked-requests').innerText = formatNumber(weekBlk);
+
+                document.getElementById('stat-month-requests').innerText = formatNumber(monthReqs);
+                document.getElementById('stat-month-success-requests').innerText = formatNumber(monthSucc);
+                document.getElementById('stat-month-blocked-requests').innerText = formatNumber(monthBlk);
+
+                // Phần 1: Tổng tất cả từ lúc chạy (All-Time)
+                document.getElementById('stat-total-input-tokens').innerText = formatNumber(t.total_input_tokens);
+                document.getElementById('stat-total-output-tokens').innerText = formatNumber(t.total_output_tokens);
                 document.getElementById('stat-total-tokens').innerText = formatNumber(t.total_tokens);
 
-                // Update Clients Table with Status & Violation Handling
+                // Phần 2: Tổng theo ngày hiện tại (Today)
+                document.getElementById('stat-input-tokens').innerText = formatNumber(todayIn);
+                document.getElementById('stat-output-tokens').innerText = formatNumber(todayOut);
+                document.getElementById('stat-today-tokens').innerText = formatNumber(todayTot);
+                const dateBadge = document.getElementById('stat-today-date-badge');
+                if (dateBadge) {
+                    dateBadge.innerText = `Hôm nay: ${todayDate}`;
+                }
+
+                // Phần 3: Tổng theo tuần hiện tại (This Week)
+                document.getElementById('stat-week-input-tokens').innerText = formatNumber(weekIn);
+                document.getElementById('stat-week-output-tokens').innerText = formatNumber(weekOut);
+                document.getElementById('stat-week-tokens').innerText = formatNumber(weekTot);
+                const weekBadge = document.getElementById('stat-week-date-badge');
+                if (weekBadge && weekStart && weekEnd) {
+                    weekBadge.innerText = `${weekStart} → ${weekEnd}`;
+                }
+
+                // Phần 4: Tổng theo tháng hiện tại (This Month)
+                document.getElementById('stat-month-input-tokens').innerText = formatNumber(monthIn);
+                document.getElementById('stat-month-output-tokens').innerText = formatNumber(monthOut);
+                document.getElementById('stat-month-tokens').innerText = formatNumber(monthTot);
+                const monthBadge = document.getElementById('stat-month-date-badge');
+                if (monthBadge) {
+                    monthBadge.innerText = `Tháng: ${monthLabel}`;
+                }
+
+                // Update Clients Table with Status, Violation Handling & 4 Token Horizons
                 const clientsBody = document.getElementById('clients-table-body');
                 const violationBanner = document.getElementById('clients-violation-alert');
                 const violationBadge = document.getElementById('clients-violation-badge');
@@ -1488,8 +2061,28 @@
 
                 if (stats.usage_by_client && stats.usage_by_client.length > 0) {
                     clientsBody.innerHTML = stats.usage_by_client.map(c => {
+                        const cTodayTokens = c.today_tokens !== undefined ? c.today_tokens : (c.sum_tokens || 0);
+                        const cTodayIn = c.today_input_tokens || 0;
+                        const cTodayOut = c.today_output_tokens || 0;
+                        const cTodayReqs = c.today_requests !== undefined ? c.today_requests : (c.req_count || 0);
+
+                        const cWeekTokens = c.week_tokens || 0;
+                        const cWeekIn = c.week_input_tokens || 0;
+                        const cWeekOut = c.week_output_tokens || 0;
+                        const cWeekReqs = c.week_requests || 0;
+
+                        const cMonthTokens = c.month_tokens || 0;
+                        const cMonthIn = c.month_input_tokens || 0;
+                        const cMonthOut = c.month_output_tokens || 0;
+                        const cMonthReqs = c.month_requests || 0;
+
+                        const cAllTokens = c.alltime_tokens !== undefined ? c.alltime_tokens : cTodayTokens;
+                        const cAllIn = c.alltime_input_tokens || 0;
+                        const cAllOut = c.alltime_output_tokens || 0;
+                        const cAllReqs = c.alltime_requests !== undefined ? c.alltime_requests : cTodayReqs;
+
                         const isBlockedPC = c.is_blocked_pc || c.policy_action === 'block';
-                        const isQuotaExceeded = (c.daily_quota > 0 && c.sum_tokens >= c.daily_quota);
+                        const isQuotaExceeded = (c.daily_quota > 0 && cTodayTokens >= c.daily_quota);
                         const hasViolations = (c.blocked_count && c.blocked_count > 0) || isQuotaExceeded;
                         const displayName = c.policy_name || c.machine_name || 'Workstation';
                         
@@ -1521,9 +2114,9 @@
                             statusHtml = `<span class="badge badge-allowed">🟢 Hoạt động</span>`;
                         }
 
-                        const quotaDisplay = c.daily_quota > 0 
-                            ? `<strong>${formatNumber(c.sum_tokens)}</strong> <span style="font-size: 11px; color: var(--text-secondary);">/ ${formatNumber(c.daily_quota)}</span>`
-                            : `<strong>${formatNumber(c.sum_tokens)}</strong> <span style="font-size: 11px; color: var(--text-secondary);">/ ∞</span>`;
+                        const quotaSuffix = c.daily_quota > 0 
+                            ? `<span style="font-size: 11px; font-weight: 500; color: var(--text-secondary);">/ ${formatNumber(c.daily_quota)}</span>`
+                            : `<span style="font-size: 11px; font-weight: 500; color: var(--text-secondary);">/ ∞</span>`;
 
                         const safeName = displayName.replace(/'/g, "\\'");
                         const toggleBtn = isLocked
@@ -1532,12 +2125,29 @@
 
                         return `
                             <tr style="${isLocked ? 'background: rgba(239, 68, 68, 0.07);' : ''}">
-                                <td><strong>${c.client_ip}</strong></td>
-                                <td><span class="mac-pill">${c.client_mac}</span></td>
-                                <td>${displayName}</td>
+                                <td>
+                                    <div style="font-weight: 700;">${displayName}</div>
+                                    <div style="font-size: 11.5px; color: var(--text-secondary); margin-top: 3px;">
+                                        <strong>${c.client_ip}</strong> · <span class="mac-pill">${c.client_mac}</span>
+                                    </div>
+                                </td>
                                 <td>${statusHtml}</td>
-                                <td>${formatNumber(c.req_count)}</td>
-                                <td>${quotaDisplay}</td>
+                                <td class="period-metric-cell">
+                                    <div class="period-metric-main" style="color: var(--accent-cyan);">${formatNumber(cTodayTokens)} ${quotaSuffix}</div>
+                                    <div class="period-metric-sub">In: ${formatNumber(cTodayIn)} · Out: ${formatNumber(cTodayOut)} (${formatNumber(cTodayReqs)} reqs)</div>
+                                </td>
+                                <td class="period-metric-cell">
+                                    <div class="period-metric-main">${formatNumber(cWeekTokens)}</div>
+                                    <div class="period-metric-sub">In: ${formatNumber(cWeekIn)} · Out: ${formatNumber(cWeekOut)} (${formatNumber(cWeekReqs)} reqs)</div>
+                                </td>
+                                <td class="period-metric-cell">
+                                    <div class="period-metric-main">${formatNumber(cMonthTokens)}</div>
+                                    <div class="period-metric-sub">In: ${formatNumber(cMonthIn)} · Out: ${formatNumber(cMonthOut)} (${formatNumber(cMonthReqs)} reqs)</div>
+                                </td>
+                                <td class="period-metric-cell">
+                                    <div class="period-metric-main" style="color: var(--accent-purple);">${formatNumber(cAllTokens)}</div>
+                                    <div class="period-metric-sub">In: ${formatNumber(cAllIn)} · Out: ${formatNumber(cAllOut)} (${formatNumber(cAllReqs)} reqs)</div>
+                                </td>
                                 <td>
                                     <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
                                         <button class="btn btn-xs" onclick="openReconfigureModal('${c.client_ip}', '${c.client_mac}', '${safeName}')" title="Cấu hình lại Quota, Model, Provider">⚙️ Cấu hình lại</button>
@@ -1562,19 +2172,55 @@
                     }
                 }
 
-                // Update Models Table
+                // Update Models Table with 4 Token Horizons
                 const modelsBody = document.getElementById('models-table-body');
                 if (stats.usage_by_model && stats.usage_by_model.length > 0) {
-                    modelsBody.innerHTML = stats.usage_by_model.map(m => `
-                        <tr>
-                            <td><strong>${m.model}</strong></td>
-                            <td><span class="badge badge-provider">${m.provider}</span></td>
-                            <td>${formatNumber(m.req_count)}</td>
-                            <td><strong>${formatNumber(m.sum_tokens)}</strong></td>
-                        </tr>
-                    `).join('');
+                    modelsBody.innerHTML = stats.usage_by_model.map(m => {
+                        const mTodayTokens = m.today_tokens || 0;
+                        const mTodayIn = m.today_input_tokens || 0;
+                        const mTodayOut = m.today_output_tokens || 0;
+                        const mTodayReqs = m.today_requests || 0;
+
+                        const mWeekTokens = m.week_tokens || 0;
+                        const mWeekIn = m.week_input_tokens || 0;
+                        const mWeekOut = m.week_output_tokens || 0;
+                        const mWeekReqs = m.week_requests || 0;
+
+                        const mMonthTokens = m.month_tokens || 0;
+                        const mMonthIn = m.month_input_tokens || 0;
+                        const mMonthOut = m.month_output_tokens || 0;
+                        const mMonthReqs = m.month_requests || 0;
+
+                        const mAllTokens = m.alltime_tokens !== undefined ? m.alltime_tokens : (m.sum_tokens || 0);
+                        const mAllIn = m.alltime_input_tokens || 0;
+                        const mAllOut = m.alltime_output_tokens || 0;
+                        const mAllReqs = m.alltime_requests !== undefined ? m.alltime_requests : (m.req_count || 0);
+
+                        return `
+                            <tr>
+                                <td><strong>${m.model}</strong></td>
+                                <td><span class="badge badge-provider">${m.provider}</span></td>
+                                <td class="period-metric-cell">
+                                    <div class="period-metric-main" style="color: var(--accent-cyan);">${formatNumber(mTodayTokens)}</div>
+                                    <div class="period-metric-sub">In: ${formatNumber(mTodayIn)} · Out: ${formatNumber(mTodayOut)} (${formatNumber(mTodayReqs)} reqs)</div>
+                                </td>
+                                <td class="period-metric-cell">
+                                    <div class="period-metric-main">${formatNumber(mWeekTokens)}</div>
+                                    <div class="period-metric-sub">In: ${formatNumber(mWeekIn)} · Out: ${formatNumber(mWeekOut)} (${formatNumber(mWeekReqs)} reqs)</div>
+                                </td>
+                                <td class="period-metric-cell">
+                                    <div class="period-metric-main">${formatNumber(mMonthTokens)}</div>
+                                    <div class="period-metric-sub">In: ${formatNumber(mMonthIn)} · Out: ${formatNumber(mMonthOut)} (${formatNumber(mMonthReqs)} reqs)</div>
+                                </td>
+                                <td class="period-metric-cell">
+                                    <div class="period-metric-main" style="color: var(--accent-purple);">${formatNumber(mAllTokens)}</div>
+                                    <div class="period-metric-sub">In: ${formatNumber(mAllIn)} · Out: ${formatNumber(mAllOut)} (${formatNumber(mAllReqs)} reqs)</div>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
                 } else {
-                    modelsBody.innerHTML = '<tr><td colspan="4" class="empty-hint">Chưa có dữ liệu model</td></tr>';
+                    modelsBody.innerHTML = '<tr><td colspan="6" class="empty-hint">Chưa có dữ liệu model</td></tr>';
                 }
 
                 // Process and Render Audit Logs with Pagination, Search & Sorting
@@ -2432,6 +3078,428 @@
             }
         }
 
+        // ==================== CHARTS TỔNG TOKENS CONTROLLER ====================
+        const CHART_PALETTE = [
+            '#3b82f6', '#8b5cf6', '#10b981', '#f59e0b',
+            '#ec4899', '#06b6d4', '#ef4444', '#6366f1',
+            '#14b8a6', '#f97316', '#84cc16', '#a855f7'
+        ];
+
+        function formatCompactNumber(num) {
+            const n = Number(num) || 0;
+            if (n >= 1e9) return (n / 1e9).toFixed(2).replace(/\.00$/, '') + 'B';
+            if (n >= 1e6) return (n / 1e6).toFixed(2).replace(/\.00$/, '') + 'M';
+            if (n >= 1e3) return (n / 1e3).toFixed(1).replace(/\.0$/, '') + 'K';
+            return n.toLocaleString('en-US');
+        }
+
+        function resetChartDateFilter() {
+            const fromEl = document.getElementById('chart-from-date');
+            const toEl = document.getElementById('chart-to-date');
+            if (fromEl) fromEl.value = '';
+            if (toEl) toEl.value = '';
+            fetchChartsData();
+        }
+
+        function setChartDatePreset(days) {
+            const now = new Date();
+            const toStr = now.toISOString().slice(0, 10);
+            const fromDt = new Date(now.getTime() - (days - 1) * 86400000);
+            const fromStr = fromDt.toISOString().slice(0, 10);
+            const fromEl = document.getElementById('chart-from-date');
+            const toEl = document.getElementById('chart-to-date');
+            if (fromEl) fromEl.value = fromStr;
+            if (toEl) toEl.value = toStr;
+            fetchChartsData();
+        }
+
+        async function fetchChartsData() {
+            const fromEl = document.getElementById('chart-from-date');
+            const toEl = document.getElementById('chart-to-date');
+            const fromDate = fromEl ? fromEl.value.trim() : '';
+            const toDate = toEl ? toEl.value.trim() : '';
+
+            const params = new URLSearchParams();
+            if (fromDate) params.set('from_date', fromDate);
+            if (toDate) params.set('to_date', toDate);
+
+            const badgeEl = document.getElementById('chart-range-badge');
+            if (badgeEl) {
+                if (!fromDate && !toDate) {
+                    badgeEl.textContent = '🌐 Tất cả các ngày (Show All)';
+                } else {
+                    badgeEl.textContent = `📅 Lọc: ${fromDate || 'Đầu tiên'} → ${toDate || 'Hiện tại'}`;
+                }
+            }
+
+            try {
+                const url = '/api/charts' + (params.toString() ? '?' + params.toString() : '');
+                const res = await fetch(url);
+                if (!res.ok) throw new Error('Không thể tải dữ liệu biểu đồ');
+                const data = await res.json();
+
+                renderTotalByDayChart(data);
+                renderSeriesByDayChart(
+                    data.dates || [],
+                    data.pc_series || [],
+                    data.by_pc || [],
+                    'chart-by-pc',
+                    'chart-pc-legend',
+                    'chart-pc-table-body',
+                    'chart-pc-count-badge',
+                    'PC'
+                );
+                renderSeriesByDayChart(
+                    data.dates || [],
+                    data.model_series || [],
+                    data.by_model || [],
+                    'chart-by-model',
+                    'chart-model-legend',
+                    'chart-model-table-body',
+                    'chart-model-count-badge',
+                    'Model'
+                );
+            } catch (err) {
+                console.error('Lỗi tải dữ liệu Charts:', err);
+            }
+        }
+
+        function highlightChartSeries(chartContainerId, seriesIdx) {
+            const container = document.getElementById(chartContainerId);
+            if (!container) return;
+            const svg = container.querySelector('svg');
+            if (!svg) return;
+            if (seriesIdx === null || seriesIdx === undefined) {
+                svg.classList.remove('chart-svg-has-focus');
+                svg.querySelectorAll('.chart-line-group').forEach(g => g.classList.remove('is-focused'));
+            } else {
+                svg.classList.add('chart-svg-has-focus');
+                svg.querySelectorAll('.chart-line-group').forEach(g => {
+                    if (g.getAttribute('data-series-idx') === String(seriesIdx)) {
+                        g.classList.add('is-focused');
+                    } else {
+                        g.classList.remove('is-focused');
+                    }
+                });
+            }
+        }
+
+        function renderTotalByDayChart(data) {
+            const byDay = data.by_day || [];
+            const container = document.getElementById('chart-total-by-day');
+            const tbody = document.getElementById('chart-total-table-body');
+            const badgesContainer = document.getElementById('chart-total-summary-badges');
+            if (!container || !tbody) return;
+
+            const sumReq = byDay.reduce((s, d) => s + (d.requests || 0), 0);
+            const sumIn = byDay.reduce((s, d) => s + (d.input_tokens || 0), 0);
+            const sumOut = byDay.reduce((s, d) => s + (d.output_tokens || 0), 0);
+            const sumTot = byDay.reduce((s, d) => s + (d.total_tokens || 0), 0);
+
+            if (badgesContainer) {
+                badgesContainer.innerHTML = `
+                    <span class="token-group-badge" style="background: var(--badge-cyan-bg); color: var(--badge-cyan-text); border: 1px solid var(--badge-cyan-border);">
+                        Input: ${formatNumber(sumIn)}
+                    </span>
+                    <span class="token-group-badge" style="background: var(--badge-amber-bg); color: var(--badge-amber-text); border: 1px solid var(--badge-amber-border);">
+                        Output: ${formatNumber(sumOut)}
+                    </span>
+                    <span class="token-group-badge" style="background: var(--badge-model-bg); color: var(--badge-model-text); border: 1px solid var(--badge-model-border);">
+                        Tổng Tokens: ${formatNumber(sumTot)} (${byDay.length} ngày)
+                    </span>
+                `;
+            }
+
+            if (byDay.length === 0) {
+                container.innerHTML = '<div class="empty-hint">Không có dữ liệu token trong khoảng ngày đã chọn.</div>';
+                tbody.innerHTML = '<tr><td colspan="5" class="empty-hint">Không có dữ liệu trong khoảng ngày này</td></tr>';
+                return;
+            }
+
+            const maxTokens = Math.max(...byDay.map(d => d.total_tokens || 0), 1);
+            const stepWidth = Math.max(85, Math.min(140, Math.floor(960 / Math.max(1, byDay.length))));
+            const chartHeight = 270;
+            const padTop = 34;
+            const padBottom = 48;
+            const padLeft = 72;
+            const padRight = 36;
+            const plotHeight = chartHeight - padTop - padBottom;
+            const svgWidth = Math.max(700, padLeft + padRight + Math.max(1, byDay.length) * stepWidth);
+            const baseY = padTop + plotHeight;
+
+            let gridLines = '';
+            const steps = 4;
+            for (let i = 0; i <= steps; i++) {
+                const val = Math.round((maxTokens / steps) * (steps - i));
+                const y = padTop + (plotHeight / steps) * i;
+                gridLines += `
+                    <line x1="${padLeft}" y1="${y}" x2="${svgWidth - padRight}" y2="${y}" stroke="var(--border-subtle)" stroke-dasharray="3,3" />
+                    <text x="${padLeft - 8}" y="${y + 4}" text-anchor="end" fill="var(--text-secondary)" font-size="11" font-family="JetBrains Mono, monospace">${formatCompactNumber(val)}</text>
+                `;
+            }
+
+            const getX = (idx) => byDay.length === 1
+                ? padLeft + (svgWidth - padLeft - padRight) / 2
+                : padLeft + stepWidth / 2 + idx * stepWidth;
+            const getY = (val) => baseY - ((val || 0) / maxTokens) * plotHeight;
+
+            const totalPoints = byDay.map((d, i) => `${getX(i)},${getY(d.total_tokens)}`).join(' ');
+            const inputPoints = byDay.map((d, i) => `${getX(i)},${getY(d.input_tokens)}`).join(' ');
+            const outputPoints = byDay.map((d, i) => `${getX(i)},${getY(d.output_tokens)}`).join(' ');
+
+            const areaPoints = byDay.length > 1
+                ? `${getX(0)},${baseY} ${totalPoints} ${getX(byDay.length - 1)},${baseY}`
+                : '';
+
+            let xLabelsHtml = '';
+            let totalDotsHtml = '';
+            let inputDotsHtml = '';
+            let outputDotsHtml = '';
+
+            byDay.forEach((d, idx) => {
+                const x = getX(idx);
+                const yTot = getY(d.total_tokens);
+                const yIn = getY(d.input_tokens);
+                const yOut = getY(d.output_tokens);
+                const tip = `Ngày ${d.date}\nTổng Tokens: ${formatNumber(d.total_tokens)}\nInput: ${formatNumber(d.input_tokens)} | Output: ${formatNumber(d.output_tokens)}\nRequests: ${formatNumber(d.requests)}`;
+
+                xLabelsHtml += `
+                    <line x1="${x}" y1="${padTop}" x2="${x}" y2="${baseY}" stroke="var(--border-subtle)" stroke-dasharray="2,4" opacity="0.55" />
+                    <text x="${x}" y="${baseY + 18}" text-anchor="middle" fill="var(--text-secondary)" font-size="11" font-family="JetBrains Mono, monospace">${d.date.slice(5)}</text>
+                    <text x="${x}" y="${baseY + 32}" text-anchor="middle" fill="var(--text-secondary)" font-size="10" font-family="JetBrains Mono, monospace">${d.date.slice(0, 4)}</text>
+                `;
+
+                totalDotsHtml += `
+                    <g>
+                        <title>${tip}</title>
+                        <circle class="chart-line-point" cx="${x}" cy="${yTot}" r="4.5" fill="#8b5cf6" stroke="var(--bg-surface)" stroke-width="2" />
+                        <text x="${x}" y="${Math.max(15, yTot - 9)}" text-anchor="middle" fill="var(--text-primary)" font-size="11" font-weight="700" font-family="JetBrains Mono, monospace">${formatCompactNumber(d.total_tokens)}</text>
+                    </g>
+                `;
+                inputDotsHtml += `
+                    <g>
+                        <title>Ngày ${d.date} — Input Tokens: ${formatNumber(d.input_tokens)}</title>
+                        <circle class="chart-line-point" cx="${x}" cy="${yIn}" r="3.5" fill="#06b6d4" stroke="var(--bg-surface)" stroke-width="1.5" />
+                    </g>
+                `;
+                outputDotsHtml += `
+                    <g>
+                        <title>Ngày ${d.date} — Output Tokens: ${formatNumber(d.output_tokens)}</title>
+                        <circle class="chart-line-point" cx="${x}" cy="${yOut}" r="3.5" fill="#f59e0b" stroke="var(--bg-surface)" stroke-width="1.5" />
+                    </g>
+                `;
+            });
+
+            container.innerHTML = `
+                <div class="chart-legend" style="margin-bottom: 6px;">
+                    <span class="chart-legend-item" onmouseenter="highlightChartSeries('chart-total-by-day', 0)" onmouseleave="highlightChartSeries('chart-total-by-day', null)">
+                        <span class="chart-legend-dot" style="background: #8b5cf6;"></span>Tổng Tokens Tiêu Thụ
+                    </span>
+                    <span class="chart-legend-item" onmouseenter="highlightChartSeries('chart-total-by-day', 1)" onmouseleave="highlightChartSeries('chart-total-by-day', null)">
+                        <span class="chart-legend-dot" style="background: #06b6d4;"></span>Input Tokens
+                    </span>
+                    <span class="chart-legend-item" onmouseenter="highlightChartSeries('chart-total-by-day', 2)" onmouseleave="highlightChartSeries('chart-total-by-day', null)">
+                        <span class="chart-legend-dot" style="background: #f59e0b;"></span>Output Tokens
+                    </span>
+                </div>
+                <svg width="${svgWidth}" height="${chartHeight}" viewBox="0 0 ${svgWidth} ${chartHeight}" aria-hidden="true" style="display: block; min-width: 100%;">
+                    <defs>
+                        <linearGradient id="gradTotalLineArea" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0.22" />
+                            <stop offset="100%" stop-color="#8b5cf6" stop-opacity="0.01" />
+                        </linearGradient>
+                    </defs>
+                    ${gridLines}
+                    ${xLabelsHtml}
+                    <line x1="${padLeft}" y1="${baseY}" x2="${svgWidth - padRight}" y2="${baseY}" stroke="var(--border-color)" stroke-width="1.5" />
+                    ${areaPoints ? `<polygon points="${areaPoints}" fill="url(#gradTotalLineArea)" />` : ''}
+                    <g class="chart-line-group" data-series-idx="1">
+                        <polyline class="chart-line-path" points="${inputPoints}" stroke="#06b6d4" stroke-width="2" stroke-dasharray="5,3" />
+                        ${inputDotsHtml}
+                    </g>
+                    <g class="chart-line-group" data-series-idx="2">
+                        <polyline class="chart-line-path" points="${outputPoints}" stroke="#f59e0b" stroke-width="2" stroke-dasharray="3,3" />
+                        ${outputDotsHtml}
+                    </g>
+                    <g class="chart-line-group" data-series-idx="0">
+                        <polyline class="chart-line-path" points="${totalPoints}" stroke="#8b5cf6" stroke-width="2.8" />
+                        ${totalDotsHtml}
+                    </g>
+                </svg>
+            `;
+
+            tbody.innerHTML = [...byDay].reverse().map(d => `
+                <tr>
+                    <th scope="row">${d.date}</th>
+                    <td class="num-col">${formatNumber(d.requests)}</td>
+                    <td class="num-col" style="color: var(--accent-cyan); font-weight: 600;">${formatNumber(d.input_tokens)}</td>
+                    <td class="num-col" style="color: var(--accent-orange); font-weight: 600;">${formatNumber(d.output_tokens)}</td>
+                    <td class="num-col" style="color: var(--accent-purple); font-weight: 700;">${formatNumber(d.total_tokens)}</td>
+                </tr>
+            `).join('');
+        }
+
+        function renderSeriesByDayChart(dates, seriesList, rawRows, chartContainerId, legendId, tableBodyId, badgeId, unitLabel) {
+            const container = document.getElementById(chartContainerId);
+            const legendEl = document.getElementById(legendId);
+            const tbody = document.getElementById(tableBodyId);
+            const badgeEl = document.getElementById(badgeId);
+            if (!container || !tbody) return;
+
+            if (badgeEl) {
+                badgeEl.textContent = `${seriesList.length} ${unitLabel}`;
+            }
+
+            if (!dates.length || !seriesList.length) {
+                if (legendEl) legendEl.innerHTML = '';
+                container.innerHTML = `<div class="empty-hint">Không có dữ liệu ${unitLabel} trong khoảng ngày đã chọn.</div>`;
+                const colSpan = unitLabel === 'PC' ? 6 : 7;
+                tbody.innerHTML = `<tr><td colspan="${colSpan}" class="empty-hint">Không có dữ liệu trong khoảng ngày này</td></tr>`;
+                return;
+            }
+
+            if (legendEl) {
+                legendEl.innerHTML = seriesList.map((s, idx) => {
+                    const color = CHART_PALETTE[idx % CHART_PALETTE.length];
+                    return `
+                        <span class="chart-legend-item"
+                              onmouseenter="highlightChartSeries('${chartContainerId}', ${idx})"
+                              onmouseleave="highlightChartSeries('${chartContainerId}', null)"
+                              title="Di chuột để làm nổi bật đường biểu đồ — Tổng trong khoảng chọn: ${formatNumber(s.total_tokens)} tokens (${formatNumber(s.total_requests)} reqs)">
+                            <span class="chart-legend-dot" style="background: ${color};"></span>
+                            <span>${s.label}</span>
+                            <strong style="font-family: 'JetBrains Mono', monospace; color: var(--accent-purple);">${formatCompactNumber(s.total_tokens)}</strong>
+                        </span>
+                    `;
+                }).join('');
+            }
+
+            // Tìm giá trị token theo ngày lớn nhất của một series bất kỳ để chuẩn hóa trục Y cho Line Chart
+            let maxSingleVal = 1;
+            seriesList.forEach(s => {
+                dates.forEach(d => {
+                    const v = (s.daily && s.daily[d]) ? (s.daily[d].total_tokens || 0) : 0;
+                    if (v > maxSingleVal) maxSingleVal = v;
+                });
+            });
+
+            const stepWidth = Math.max(85, Math.min(140, Math.floor(960 / Math.max(1, dates.length))));
+            const chartHeight = 275;
+            const padTop = 34;
+            const padBottom = 48;
+            const padLeft = 72;
+            const padRight = 36;
+            const plotHeight = chartHeight - padTop - padBottom;
+            const svgWidth = Math.max(700, padLeft + padRight + Math.max(1, dates.length) * stepWidth);
+            const baseY = padTop + plotHeight;
+
+            const getX = (idx) => dates.length === 1
+                ? padLeft + (svgWidth - padLeft - padRight) / 2
+                : padLeft + stepWidth / 2 + idx * stepWidth;
+            const getY = (val) => baseY - ((val || 0) / maxSingleVal) * plotHeight;
+
+            let gridLines = '';
+            const steps = 4;
+            for (let i = 0; i <= steps; i++) {
+                const val = Math.round((maxSingleVal / steps) * (steps - i));
+                const y = padTop + (plotHeight / steps) * i;
+                gridLines += `
+                    <line x1="${padLeft}" y1="${y}" x2="${svgWidth - padRight}" y2="${y}" stroke="var(--border-subtle)" stroke-dasharray="3,3" />
+                    <text x="${padLeft - 8}" y="${y + 4}" text-anchor="end" fill="var(--text-secondary)" font-size="11" font-family="JetBrains Mono, monospace">${formatCompactNumber(val)}</text>
+                `;
+            }
+
+            let xLabelsHtml = '';
+            dates.forEach((d, dIdx) => {
+                const x = getX(dIdx);
+                xLabelsHtml += `
+                    <line x1="${x}" y1="${padTop}" x2="${x}" y2="${baseY}" stroke="var(--border-subtle)" stroke-dasharray="2,4" opacity="0.55" />
+                    <text x="${x}" y="${baseY + 18}" text-anchor="middle" fill="var(--text-secondary)" font-size="11" font-family="JetBrains Mono, monospace">${d.slice(5)}</text>
+                    <text x="${x}" y="${baseY + 32}" text-anchor="middle" fill="var(--text-secondary)" font-size="10" font-family="JetBrains Mono, monospace">${d.slice(0, 4)}</text>
+                `;
+            });
+
+            let linesHtml = '';
+            // Vẽ từ series nhỏ lên series lớn để đường lớn nhất nổi trên cùng
+            const indexedSeries = seriesList.map((s, idx) => ({ s, idx })).reverse();
+            indexedSeries.forEach(({ s, idx }) => {
+                const color = CHART_PALETTE[idx % CHART_PALETTE.length];
+                const pts = dates.map((d, dIdx) => {
+                    const cell = (s.daily && s.daily[d]) ? s.daily[d] : null;
+                    const val = cell ? (cell.total_tokens || 0) : 0;
+                    return `${getX(dIdx)},${getY(val)}`;
+                }).join(' ');
+
+                let dotsHtml = '';
+                dates.forEach((d, dIdx) => {
+                    const cell = (s.daily && s.daily[d]) ? s.daily[d] : { total_tokens: 0, input_tokens: 0, output_tokens: 0, requests: 0 };
+                    const val = cell.total_tokens || 0;
+                    const x = getX(dIdx);
+                    const y = getY(val);
+                    const tip = `Ngày ${d} — ${s.label}\nTổng Tokens: ${formatNumber(val)}\nInput: ${formatNumber(cell.input_tokens)} | Output: ${formatNumber(cell.output_tokens)}\nRequests: ${formatNumber(cell.requests)}`;
+
+                    dotsHtml += `
+                        <g>
+                            <title>${tip}</title>
+                            <circle class="chart-line-point" cx="${x}" cy="${y}" r="${val > 0 ? 4.2 : 2.8}" fill="${color}" stroke="var(--bg-surface)" stroke-width="1.8" />
+                            ${val > 0 && idx < 3 ? `<text x="${x}" y="${Math.max(14, y - 8)}" text-anchor="middle" fill="${color}" font-size="10" font-weight="700" font-family="JetBrains Mono, monospace">${formatCompactNumber(val)}</text>` : ''}
+                        </g>
+                    `;
+                });
+
+                linesHtml += `
+                    <g class="chart-line-group" data-series-idx="${idx}"
+                       onmouseenter="highlightChartSeries('${chartContainerId}', ${idx})"
+                       onmouseleave="highlightChartSeries('${chartContainerId}', null)">
+                        <polyline class="chart-line-path" points="${pts}" stroke="${color}" stroke-width="2.5" />
+                        ${dotsHtml}
+                    </g>
+                `;
+            });
+
+            container.innerHTML = `
+                <svg width="${svgWidth}" height="${chartHeight}" viewBox="0 0 ${svgWidth} ${chartHeight}" aria-hidden="true" style="display: block; min-width: 100%;">
+                    ${gridLines}
+                    ${xLabelsHtml}
+                    <line x1="${padLeft}" y1="${baseY}" x2="${svgWidth - padRight}" y2="${baseY}" stroke="var(--border-color)" stroke-width="1.5" />
+                    ${linesHtml}
+                </svg>
+            `;
+
+            const sortedRows = [...rawRows].sort((a, b) => {
+                if (a.date !== b.date) return b.date.localeCompare(a.date);
+                return (b.total_tokens || 0) - (a.total_tokens || 0);
+            });
+
+            if (unitLabel === 'PC') {
+                tbody.innerHTML = sortedRows.map(r => `
+                    <tr>
+                        <th scope="row">${r.date}</th>
+                        <td>
+                            <strong>${r.machine_name || r.client_ip}</strong>
+                            <span style="color: var(--text-secondary); font-size: 11px; margin-left: 6px;">${r.client_ip} · ${r.client_mac}</span>
+                        </td>
+                        <td class="num-col">${formatNumber(r.requests)}</td>
+                        <td class="num-col" style="color: var(--accent-cyan); font-weight: 600;">${formatNumber(r.input_tokens)}</td>
+                        <td class="num-col" style="color: var(--accent-orange); font-weight: 600;">${formatNumber(r.output_tokens)}</td>
+                        <td class="num-col" style="color: var(--accent-purple); font-weight: 700;">${formatNumber(r.total_tokens)}</td>
+                    </tr>
+                `).join('');
+            } else {
+                tbody.innerHTML = sortedRows.map(r => `
+                    <tr>
+                        <th scope="row">${r.date}</th>
+                        <td><span class="badge badge-model">${r.model}</span></td>
+                        <td><span class="badge badge-provider">${r.provider}</span></td>
+                        <td class="num-col">${formatNumber(r.requests)}</td>
+                        <td class="num-col" style="color: var(--accent-cyan); font-weight: 600;">${formatNumber(r.input_tokens)}</td>
+                        <td class="num-col" style="color: var(--accent-orange); font-weight: 600;">${formatNumber(r.output_tokens)}</td>
+                        <td class="num-col" style="color: var(--accent-purple); font-weight: 700;">${formatNumber(r.total_tokens)}</td>
+                    </tr>
+                `).join('');
+            }
+        }
+
         // ==================== THEME CONTROLLER ====================
         function getPreferredTheme() {
             try {
@@ -2496,8 +3564,15 @@
         fetchData();
         fetchPolicy();
         fetchDiscovery();
+        fetchChartsData();
         setInterval(fetchData, 3000);
         setInterval(fetchDiscovery, 3000);
+        setInterval(() => {
+            const vChr = document.getElementById('view-charts');
+            if (vChr && vChr.style.display !== 'none') {
+                fetchChartsData();
+            }
+        }, 5000);
     </script>
 </body>
 </html>

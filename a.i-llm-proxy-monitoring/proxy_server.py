@@ -20,6 +20,7 @@ from urllib.parse import urlparse
 
 from database import (
     init_db, log_request, get_daily_token_usage, get_daily_detailed_token_usage, get_recent_logs, get_paginated_logs, get_summary_stats,
+    get_daily_token_charts,
     record_discovery, get_discoveries, delete_discovery, reset_audit_logs, resolve_client_violations,
     get_policy_from_db, save_policy_to_db, get_client_active_violation,
 )
@@ -641,6 +642,22 @@ async def api_stats():
                 "machine_name": r.get("name", "Workstation"),
                 "req_count": 0,
                 "sum_tokens": 0,
+                "alltime_requests": 0,
+                "alltime_input_tokens": 0,
+                "alltime_output_tokens": 0,
+                "alltime_tokens": 0,
+                "today_requests": 0,
+                "today_input_tokens": 0,
+                "today_output_tokens": 0,
+                "today_tokens": 0,
+                "week_requests": 0,
+                "week_input_tokens": 0,
+                "week_output_tokens": 0,
+                "week_tokens": 0,
+                "month_requests": 0,
+                "month_input_tokens": 0,
+                "month_output_tokens": 0,
+                "month_tokens": 0,
                 "blocked_count": 0,
                 "last_violation_action": None,
                 "last_violation_msg": None,
@@ -656,6 +673,25 @@ async def api_stats():
             })
 
     return stats
+
+
+@app.get("/api/charts")
+async def api_charts(from_date: Optional[str] = None, to_date: Optional[str] = None):
+    """
+    API trả về dữ liệu 3 biểu đồ (Charts tổng tokens) theo ngày:
+    - Mặc định không truyền from_date / to_date sẽ trả về toàn bộ lịch sử (Show All).
+    - Hỗ trợ lọc khoảng ngày từ from_date (YYYY-MM-DD) đến to_date (YYYY-MM-DD).
+    """
+    chart_data = get_daily_token_charts(from_date=from_date, to_date=to_date)
+    for pc in chart_data.get("pc_series", []):
+        cip = pc.get("client_ip", "")
+        cmac = pc.get("client_mac", "")
+        rule = get_policy_for_client(cip, cmac)
+        policy_name = rule.get("name", "")
+        if policy_name and policy_name not in ("Default LAN Policy", "Default Policy"):
+            pc["machine_name"] = policy_name
+            pc["label"] = f"{policy_name} ({cip})" if cip and cip != "-" else policy_name
+    return chart_data
 
 @app.post("/api/client-access")
 async def api_toggle_client_access(payload: dict):

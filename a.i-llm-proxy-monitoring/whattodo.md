@@ -44,3 +44,22 @@ Cung cấp tính năng reset các logs và bộ đếm tokens:
     tìm kiếm và sắp xếp cho từng header column của bảng
 
 Thêm icon để đổi theme sáng tối, mặc định chọn theme sáng 
+
+Thống kê tổng token
+    các chỉ số 
+        tổng tất cả từ lúc chạy (All-Time)
+        tổng theo ngày hiện tại (Hôm nay)
+        tổng theo tuần hiện tại (Tuần này)
+        tổng theo tháng hiện tại (Tháng này)
+    cho từng 
+        Thống Kê Theo Model AI
+        Máy Trạm Mạng LAN (IP & MAC)
+
+Đang có các tab
+    Giám sát & logs realtime
+    Ma trận phân quyền & Quota (Policy Matrix)
+    bổ xung: Charts tổng tokens 
+        cho phép chọn từ ngày đến ngày, mặc định không chọn để show all cho các chart, dạng line chart
+            Chart theo từng PC là tổng số theo ngày của từng PC 
+            Chart theo từng Model A.I là tổng số theo ngày của từng Model A.I 
+            Chart theo tổng tất cả theo ngày 

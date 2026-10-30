@@ -27,6 +27,7 @@ Tài liệu này chi tiết hóa toàn bộ kiến trúc kỹ thuật, danh sác
 | **12** | Dòng 37–40 | Cung cấp tính năng reset audit logs và bộ đếm token về 0 trên UI & API; xác nhận an toàn; tùy chọn giữ lại hoặc reset discovered endpoints. | API `POST /api/logs/reset` + UI Modal xác nhận an toàn (cảnh báo đỏ, checkbox giữ lại / reset discovery, gọi `VACUUM` giải phóng đĩa, đặt lại mọi KPI về 0). | [database.py](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/database.py)<br>[proxy_server.py](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/proxy_server.py)<br>[static/index.html](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/static/index.html)<br>[howtodo.md#4.3](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/howtodo.md#4.3) | `test_19_reset_logs_and_tokens` |
 | **13** | Dòng 42–44 | Nhật Ký Audit Chi Tiết Thời Gian Thực:<br>• Phân trang, mỗi trang 20 item.<br>• Tìm kiếm và sắp xếp cho từng header column của bảng. | Hỗ trợ phân trang 20 items/trang cả ở API backend (`/api/logs?page=...&page_size=20`) và UI client-side reactive. Ô tìm kiếm riêng cho từng cột (Thời gian, IP/MAC, Tên máy, Model, Tokens, Latency, Status, Ghi chú) + Global search; click header để đảo chiều sắp xếp (▲/▼/⇅). | [static/index.html](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/static/index.html)<br>[proxy_server.py](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/proxy_server.py)<br>[database.py](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/database.py)<br>[howtodo.md#4.4](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/howtodo.md#4.4) | `test_26_audit_logs_pagination_search_sort` |
 | **14** | Dòng 46 | Thêm icon để đổi theme sáng tối, mặc định chọn theme sáng. | Hỗ trợ chuyển đổi Theme Sáng / Tối (Light & Dark Theme Switcher) với mặc định chuẩn xác Theme Sáng; token màu sắc CSS Variables hoàn chỉnh cho cả 2 theme; nút toggle icon (Sun/Moon SVG) mượt mà trên Header; chống giật FOUC bằng inline meta/script; tự động đồng bộ và lưu trữ qua `localStorage`. | [static/index.html](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/static/index.html)<br>[howtodo.md#4.5](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/howtodo.md#4.5) | `test_27_light_dark_theme_switcher` |
+| **15** | Dòng 48–56 | Thống kê tổng token theo 4 chỉ số: Tổng tất cả từ lúc chạy (All-Time), Hôm nay (Today), Tuần này (This Week), Tháng này (This Month) cho toàn hệ thống, từng **Thống Kê Theo Model AI** và từng **Máy Trạm Mạng LAN (IP & MAC)**. | Tầng DB (`get_summary_stats()`) tính toán đồng thời 4 mốc thời gian (`alltime_*`, `today_*`, `week_*`, `month_*`) cả ở mức toàn cục (`totals`, `today`, `week`, `month`) lẫn từng dòng trong `usage_by_client` và `usage_by_model`. Trên Dashboard UI hiển thị 4 khung KPI tổng quan và 4 cột thời gian chi tiết (`Hôm nay`, `Tuần này`, `Tháng này`, `Tất cả`) kèm `In / Out / reqs` cho từng Máy Trạm và từng Model AI. | [database.py](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/database.py)<br>[proxy_server.py](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/proxy_server.py)<br>[static/index.html](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/static/index.html)<br>[howtodo.md#4.6](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/howtodo.md#4.6) | `test_28_split_alltime_and_daily_token_stats` |
 
 ---
 
@@ -594,6 +595,57 @@ Bảng màu được tính toán tối ưu độ tương phản chuẩn WCAG 2.1
 #### 4. Lưu Trữ Bền Vững & Đồng Bộ Đa Tab (Persistence & Multi-tab Sync)
 - **Lưu trữ**: Lựa chọn của người dùng được lưu trữ tự động trong `localStorage ('app-theme')` dưới giá trị `'light'` hoặc `'dark'`.
 - **Đồng bộ đa tab (Cross-tab Sync)**: Lắng nghe sự kiện `window.addEventListener('storage', ...)` giúp thay đổi theme trên một tab sẽ lập tức áp dụng đồng bộ ngay lập tức cho tất cả các tab khác của Dashboard đang mở trong cùng trình duyệt.
+
+---
+
+### 4.6. Thống Kê Tổng Token Theo 4 Chỉ Số (All-Time, Hôm Nay, Tuần Này, Tháng Này) Cho Toàn Hệ Thống, Từng Máy Trạm LAN & Từng Model AI
+
+Đáp ứng yêu cầu tại dòng 48–56 của [`whattodo.md`](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/whattodo.md):
+> *"Thống kê tổng token — các chỉ số: tổng tất cả từ lúc chạy (All-Time), tổng theo ngày hiện tại (Hôm nay), tổng theo tuần hiện tại (Tuần này), tổng theo tháng hiện tại (Tháng này) cho từng: Thống Kê Theo Model AI, Máy Trạm Mạng LAN (IP & MAC)"*
+
+1. **Tầng Cơ sở dữ liệu & API (`database.py` -> `get_summary_stats()` & `GET /api/stats`)**:
+   - Xác định 4 mốc thời gian chuẩn:
+     - **All-Time**: Toàn bộ bản ghi từ lúc bắt đầu chạy (hoặc từ lần Reset gần nhất).
+     - **Hôm nay (Today)**: `DATE(timestamp) = DATE(today_str)` (`YYYY-MM-DD`).
+     - **Tuần này (This Week)**: Từ Thứ Hai (`week_start_str`) đến Chủ Nhật (`week_end_str`) của tuần hiện tại (`DATE(timestamp) BETWEEN DATE(week_start) AND DATE(week_end)`).
+     - **Tháng này (This Month)**: `strftime('%Y-%m', timestamp) = month_str` (`YYYY-MM`).
+   - Truy vấn 4 chỉ số (`*_requests`, `*_input_tokens`, `*_output_tokens`, `*_tokens`) cho cả 3 cấp độ:
+     - **Toàn hệ thống**: `totals`, `today`, `week`, `month`.
+     - **Từng Máy Trạm Mạng LAN (`usage_by_client`)**: Mỗi máy trạm có đầy đủ `today_*`, `week_*`, `month_*`, `alltime_*` kèm kiểm tra hạn mức `daily_quota` và cảnh báo vi phạm.
+     - **Từng Model AI (`usage_by_model`)**: Mỗi cặp `(model, provider)` có đầy đủ `today_*`, `week_*`, `month_*`, `alltime_*`.
+
+2. **Tầng Giao diện Dashboard (`static/index.html`)**:
+   - **Bảng Tổng Hợp Gọn Nhẹ (`.summary-horizon-table` trong `.table-wrapper`)**:
+     - Gộp toàn bộ thống kê Requests (Tổng, Hợp lệ, Bị chặn) và Tokens (Input, Output, Tổng tiêu thụ) vào **1 bảng 4 dòng** gọn gàng, tiết kiệm diện tích màn hình và dễ dàng đối chiếu:
+       - `#token-section-today`: 📅 Tổng Theo Ngày Hiện Tại (Hôm Nay)
+       - `#token-section-week`: 📆 Tổng Theo Tuần Hiện Tại (Tuần Này)
+       - `#token-section-month`: 🗓️ Tổng Theo Tháng Hiện Tại (Tháng Này)
+       - `#token-section-alltime`: 🌐 Tổng Tất Cả Từ Lúc Chạy (All-Time)
+   - **Bảng `🖥️ Máy Trạm Mạng LAN (IP & MAC)` và Bảng `🤖 Thống Kê Theo Model AI`**:
+     - Hiển thị trực tiếp 4 cột chỉ số song song: **📅 Hôm Nay**, **📆 Tuần Này**, **🗓️ Tháng Này**, **🌐 Tất Cả (All-Time)**, mỗi ô gồm Tổng Tokens và dòng phụ chi tiết `In: ... · Out: ... (... reqs)`.
+
+---
+
+### 4.7. Tab `📈 Charts Tổng Tokens` — Bộ Lọc Từ Ngày Đến Ngày (Mặc Định Show All) & 3 Biểu Đồ Theo Ngày
+
+Đáp ứng yêu cầu tại dòng 58–65 của [`whattodo.md`](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/whattodo.md):
+> *"Đang có các tab: Giám sát & logs realtime, Ma trận phân quyền & Quota (Policy Matrix); bổ sung: Charts tổng tokens — cho phép chọn từ ngày đến ngày, mặc định không chọn để show all cho các charts: Chart theo từng PC là tổng số theo ngày của từng PC, Chart theo từng Model A.I là tổng số theo ngày của từng Model A.I, Chart theo tổng tất cả theo ngày."*
+
+1. **Tầng Database & API (`database.py` -> `get_daily_token_charts()` & `GET /api/charts`)**:
+   - Hỗ trợ tham số lọc tùy chọn `from_date` (`YYYY-MM-DD`) và `to_date` (`YYYY-MM-DD`).
+   - **Mặc định không chọn (`from_date=""`, `to_date=""`)**: Truy vấn toàn bộ lịch sử (`Show All`) từ bảng `llm_audit_log`.
+   - Trả về cấu trúc dữ liệu đồng bộ cho cả 3 biểu đồ:
+     - `by_day`: Danh sách tổng hợp toàn hệ thống theo từng ngày (`date`, `requests`, `input_tokens`, `output_tokens`, `total_tokens`).
+     - `by_pc` & `pc_series`: Tổng số tokens theo từng ngày của từng Máy Trạm PC (`IP & MAC`, `machine_name`, `daily` map theo ngày).
+     - `by_model` & `model_series`: Tổng số tokens theo từng ngày của từng Model A.I (`model`, `provider`, `daily` map theo ngày).
+
+2. **Tầng Giao diện Dashboard (`static/index.html` — `#tab-charts` & `#view-charts`)**:
+   - **Thanh Bộ Lọc Ngày (`.chart-filter-bar`)**:
+     - Gồm 2 ô chọn ngày `<input type="date" id="chart-from-date">` và `<input type="date" id="chart-to-date">` mặc định để trống (`🌐 Tất cả các ngày (Show All)`), nút `🔍 Lọc theo ngày`, nút `🌐 Mặc định: Show All`, và các nút chọn nhanh `7 ngày`, `30 ngày`.
+   - **3 Biểu Đồ Đường (SVG Line Charts) Trực Quan + Bảng Chi Tiết Đi Kèm**:
+     1. **📊 1. Chart Theo Tổng Tất Cả Theo Ngày (`#chart-total-by-day` — Line Chart)**: Biểu đồ đường (`<polyline class="chart-line-path">`) cho `Tổng Tokens Tiêu Thụ`, `Input Tokens`, `Output Tokens` kèm các điểm nút `<circle class="chart-line-point">` hiển thị giá trị của từng ngày.
+     2. **🖥️ 2. Chart Theo Từng PC (`#chart-by-pc` — Line Chart)**: Biểu đồ đường đa chuỗi (Multi-series Line Chart) theo ngày phân tách màu sắc cho từng PC trong mạng LAN kèm chú giải tương tác (`#chart-pc-legend`, di chuột làm nổi bật đường của PC đó) và bảng chi tiết theo ngày của từng PC.
+     3. **🤖 3. Chart Theo Từng Model A.I (`#chart-by-model` — Line Chart)**: Biểu đồ đường đa chuỗi (Multi-series Line Chart) theo ngày phân tách màu sắc cho từng Model A.I kèm chú giải tương tác (`#chart-model-legend`, di chuột làm nổi bật đường của Model đó) và bảng chi tiết theo ngày của từng Model A.I.
 
 ---
 
