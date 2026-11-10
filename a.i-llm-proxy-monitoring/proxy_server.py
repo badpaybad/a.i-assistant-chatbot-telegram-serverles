@@ -36,16 +36,40 @@ except ImportError:
 http_client: httpx.AsyncClient = None
 socks_server = None
 
+# Cấu hình Timeout tối đa cho các tác vụ LLM Reasoning / Deep Thinking & Streaming dài hạn
+# UPSTREAM_TIMEOUT = 0 hoặc <= 0 nghĩa là None (không giới hạn thời gian đọc/ghi upstream)
+UPSTREAM_TIMEOUT_SEC = float(os.getenv("UPSTREAM_TIMEOUT", "0"))
+UPSTREAM_CONNECT_TIMEOUT_SEC = float(os.getenv("UPSTREAM_CONNECT_TIMEOUT", "60"))
+# Ngưỡng flush sớm HTTP 200 SSE headers (mặc định 25s) để tránh lỗi Go client
+# "net/http: timeout awaiting response headers" (ResponseHeaderTimeout = 60s trên Antigravity/agy)
+SSE_HEADER_FLUSH_SEC = float(os.getenv("SSE_HEADER_FLUSH_SEC", "25"))
+SSE_KEEPALIVE_INTERVAL_SEC = float(os.getenv("SSE_KEEPALIVE_INTERVAL_SEC", "15"))
+
+def build_upstream_timeout() -> httpx.Timeout:
+    rw_timeout = None if UPSTREAM_TIMEOUT_SEC <= 0 else UPSTREAM_TIMEOUT_SEC
+    return httpx.Timeout(
+        connect=UPSTREAM_CONNECT_TIMEOUT_SEC,
+        read=rw_timeout,
+        write=rw_timeout,
+        pool=rw_timeout,
+    )
+
+def build_upstream_limits() -> httpx.Limits:
+    return httpx.Limits(
+        max_keepalive_connections=200,
+        max_connections=1000,
+        keepalive_expiry=120.0,
+    )
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global http_client, socks_server
     init_db()
-    limits = httpx.Limits(max_keepalive_connections=100, max_connections=300)
-    http_client = httpx.AsyncClient(timeout=180.0, limits=limits)
+    http_client = httpx.AsyncClient(timeout=build_upstream_timeout(), limits=build_upstream_limits())
     
     # Khởi động SOCKS5 Proxy Server trên cổng 1080 (hoặc biến môi trường SOCKS5_PORT)
     socks_server = await start_socks5_server()
-    print("[INFO] LLM Proxy Monitoring Gateway initialized successfully (connection pool ready)")
+    print("[INFO] LLM Proxy Monitoring Gateway initialized successfully (connection pool ready, max timeout enabled)")
     yield
     if socks_server:
         socks_server.close()
@@ -251,7 +275,7 @@ async def resolve_domain_ips(domain: str) -> str:
     if cached and time.time() - cached[1] < _DNS_TTL:
         return cached[0]
     try:
-        ips = await asyncio.wait_for(asyncio.to_thread(_resolve_sync, domain), timeout=2.0)
+        ips = await asyncio.wait_for(asyncio.to_thread(_resolve_sync, domain), timeout=10.0)
     except Exception:
         ips = ""
     _dns_cache[domain] = (ips, time.time())
@@ -380,7 +404,7 @@ async def handle_socks5_client(reader: asyncio.StreamReader, writer: asyncio.Str
         try:
             up_reader, up_writer = await asyncio.wait_for(
                 asyncio.open_connection(dst_host, dst_port),
-                timeout=12.0
+                timeout=UPSTREAM_CONNECT_TIMEOUT_SEC
             )
         except Exception:
             writer.write(b"\x05\x04\x00\x01\x00\x00\x00\x00\x00\x00")  # Host unreachable
@@ -1085,7 +1109,7 @@ async def mcp_post_message(request: Request, server_name: str = "lan-tools", ses
             log_request(client_ip, client_mac, machine_name, "mcp", server_name, f"mcp:{method}", 403, "BLOCKED_DOMAIN", 0, 0, 0, err)
             return Response(status_code=202)
         try:
-            async with httpx.AsyncClient(timeout=30.0) as client:
+            async with httpx.AsyncClient(timeout=build_upstream_timeout()) as client:
                 up_resp = await client.post(upstream_url, json=payload, headers={"Content-Type": "application/json"})
                 latency = int((time.time() - start_time) * 1000)
                 tool_detail = f":{params.get('name')}" if method == "tools/call" else ""
@@ -1302,7 +1326,7 @@ async def mcp_grpc_passthrough(request: Request, server_name: str, rpc_path: str
     fwd_headers = {k: v for k, v in request.headers.items()
                    if k.lower() not in ("host", "content-length", "connection", "x-forwarded-for")}
     try:
-        client = httpx.AsyncClient(timeout=120.0)
+        client = httpx.AsyncClient(timeout=build_upstream_timeout())
         up_req = client.build_request("POST", f"{upstream_base}/{rpc_path}", headers=fwd_headers, content=body)
         up_resp = await client.send(up_req, stream=True)
 
@@ -1446,15 +1470,14 @@ async def handle_proxy_request(request: Request, provider: str, subpath: str):
 
     tracker = StreamingTokenTracker(provider, est_input_tokens)
 
-    # 6. Gửi Request lên Upstream Cloud LLM (dùng persistent pool và retry cho transient DNS/network error)
+    # 6. Gửi Request lên Upstream Cloud LLM (dùng persistent pool, max timeout và retry cho transient DNS/network error)
     global http_client
     active_client = http_client
     if active_client is None or active_client.is_closed:
-        active_client = httpx.AsyncClient(timeout=180.0, limits=httpx.Limits(max_keepalive_connections=50, max_connections=200))
+        active_client = httpx.AsyncClient(timeout=build_upstream_timeout(), limits=build_upstream_limits())
 
-    try:
+    async def _send_upstream_with_retry() -> httpx.Response:
         last_exc = None
-        upstream_resp = None
         for attempt in range(3):
             try:
                 upstream_req = active_client.build_request(
@@ -1463,18 +1486,99 @@ async def handle_proxy_request(request: Request, provider: str, subpath: str):
                     headers=headers,
                     content=body_bytes
                 )
-                upstream_resp = await active_client.send(upstream_req, stream=True)
-                last_exc = None
-                break
-            except (httpx.ConnectError, httpx.ConnectTimeout) as ce:
+                return await active_client.send(upstream_req, stream=True)
+            except (httpx.ConnectError, httpx.ConnectTimeout, httpx.PoolTimeout, httpx.RemoteProtocolError) as ce:
                 last_exc = ce
                 if attempt < 2:
                     await asyncio.sleep(0.15 * (attempt + 1))
                     continue
                 raise ce
+        raise last_exc or RuntimeError("Failed to get upstream response")
 
-        if last_exc is not None or upstream_resp is None:
-            raise last_exc or RuntimeError("Failed to get upstream response")
+    query_lower = (request.url.query or "").lower()
+    subpath_lower = (subpath or "").lower()
+    accept_lower = request.headers.get("accept", "").lower()
+    is_sse_request = (
+        "alt=sse" in query_lower
+        or "streamgeneratecontent" in subpath_lower
+        or "text/event-stream" in accept_lower
+        or (isinstance(body_json, dict) and body_json.get("stream") is True)
+    )
+
+    try:
+        upstream_resp = None
+        if is_sse_request and SSE_HEADER_FLUSH_SEC > 0:
+            upstream_task = asyncio.create_task(_send_upstream_with_retry())
+            done, _ = await asyncio.wait({upstream_task}, timeout=SSE_HEADER_FLUSH_SEC)
+            if upstream_task in done:
+                upstream_resp = upstream_task.result()
+            else:
+                # Upstream LLM đang prefill context lớn hoặc Deep Thinking > SSE_HEADER_FLUSH_SEC (25s).
+                # Flush sớm HTTP 200 SSE headers + heartbeat newline để Go client (Antigravity/agy)
+                # không bao giờ bị lỗi "net/http: timeout awaiting response headers" ở mốc 60s.
+                async def early_sse_streamer():
+                    up_resp = None
+                    status_for_log = 200
+                    err_for_log = None
+                    try:
+                        yield b"\n"
+                        while not upstream_task.done():
+                            done_wait, _ = await asyncio.wait({upstream_task}, timeout=SSE_KEEPALIVE_INTERVAL_SEC)
+                            if not done_wait:
+                                yield b"\n"
+                        up_resp = upstream_task.result()
+                        status_for_log = up_resp.status_code
+                        async for chunk in up_resp.aiter_bytes():
+                            tracker.process_chunk(chunk)
+                            if max_output > 0 or daily_out_quota > 0:
+                                _, curr_out = tracker.get_current_counts()
+                                if (max_output > 0 and curr_out > max_output) or \
+                                   (daily_out_quota > 0 and usage["daily_output"] + curr_out > daily_out_quota):
+                                    break
+                            yield chunk
+                    except asyncio.CancelledError:
+                        if not upstream_task.done():
+                            upstream_task.cancel()
+                        raise
+                    except Exception as stream_exc:
+                        status_for_log = 502
+                        err_for_log = f"Upstream stream error ({type(stream_exc).__name__}): {str(stream_exc) or repr(stream_exc)}"
+                        err_payload = json.dumps({"error": {"message": err_for_log, "code": 502}})
+                        yield f"data: {err_payload}\n\n".encode("utf-8")
+                    finally:
+                        if not upstream_task.done():
+                            upstream_task.cancel()
+                        if up_resp is not None:
+                            await up_resp.aclose()
+                        in_tok, out_tok = tracker.finalize()
+                        latency = int((time.time() - start_time) * 1000)
+                        if err_for_log:
+                            action = "ERROR"
+                        elif max_output > 0 and out_tok > max_output:
+                            action = "BLOCKED_OUTPUT_TOKENS"
+                        elif daily_out_quota > 0 and usage["daily_output"] + out_tok > daily_out_quota:
+                            action = "BLOCKED_DAILY_QUOTA"
+                        else:
+                            action = "ALLOWED"
+                        log_request(
+                            client_ip, client_mac, machine_name, provider, model_name,
+                            subpath, status_for_log, action, in_tok, out_tok, latency, err_for_log
+                        )
+
+                return StreamingResponse(
+                    early_sse_streamer(),
+                    status_code=200,
+                    media_type="text/event-stream",
+                    headers={
+                        "Cache-Control": "no-cache",
+                        "X-Accel-Buffering": "no",
+                    }
+                )
+        else:
+            upstream_resp = await _send_upstream_with_retry()
+
+        if upstream_resp is None:
+            raise RuntimeError("Failed to get upstream response")
 
         # Xử lý trường hợp Streaming response (SSE, gRPC-web, chunked)
         content_type = upstream_resp.headers.get("content-type", "")
@@ -1550,7 +1654,7 @@ async def handle_proxy_request(request: Request, provider: str, subpath: str):
 
     except Exception as e:
         latency = int((time.time() - start_time) * 1000)
-        err = f"Upstream connection error: {str(e)}"
+        err = f"Upstream connection error ({type(e).__name__}): {str(e) or repr(e)}"
         log_request(client_ip, client_mac, machine_name, provider, model_name, subpath, 502, "ERROR", est_input_tokens, 0, latency, err)
         raise HTTPException(status_code=502, detail={"error": err})
 
@@ -1606,4 +1710,12 @@ if __name__ == "__main__":
     if ssl_cert and ssl_key and os.path.exists(ssl_cert) and os.path.exists(ssl_key):
         ssl_kwargs = {"ssl_certfile": ssl_cert, "ssl_keyfile": ssl_key}
         print(f"[INFO] TLS enabled (https/wss) with cert {ssl_cert}")
-    uvicorn.run("proxy_server:app", host=host, port=port, reload=reload_mode, **ssl_kwargs)
+    keep_alive_sec = int(os.getenv("UVICORN_TIMEOUT_KEEP_ALIVE", "3600"))
+    uvicorn.run(
+        "proxy_server:app",
+        host=host,
+        port=port,
+        reload=reload_mode,
+        timeout_keep_alive=keep_alive_sec,
+        **ssl_kwargs
+    )

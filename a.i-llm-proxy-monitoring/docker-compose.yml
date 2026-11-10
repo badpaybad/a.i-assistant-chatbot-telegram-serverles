@@ -23,6 +23,11 @@ services:
       - POLICY_FILE=/app/policy_matrix.yaml
       - DB_PATH=/app/data/llm_audit.db
       - RELOAD=false
+      - UPSTREAM_TIMEOUT=0
+      - UPSTREAM_CONNECT_TIMEOUT=60
+      - SSE_HEADER_FLUSH_SEC=25
+      - SSE_KEEPALIVE_INTERVAL_SEC=15
+      - UVICORN_TIMEOUT_KEEP_ALIVE=3600
 
     volumes:
       # Gắn file cấu hình ma trận phân quyền để chỉnh sửa nóng từ bên ngoài Host

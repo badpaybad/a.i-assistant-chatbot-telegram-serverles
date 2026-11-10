@@ -8,7 +8,12 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     SOCKS5_PORT=1080 \
     HOST=0.0.0.0 \
     DB_PATH=/app/data/llm_audit.db \
-    POLICY_FILE=/app/policy_matrix.yaml
+    POLICY_FILE=/app/policy_matrix.yaml \
+    UPSTREAM_TIMEOUT=0 \
+    UPSTREAM_CONNECT_TIMEOUT=60 \
+    SSE_HEADER_FLUSH_SEC=25 \
+    SSE_KEEPALIVE_INTERVAL_SEC=15 \
+    UVICORN_TIMEOUT_KEEP_ALIVE=3600
 
 # Cài đặt các công cụ mạng hệ thống cần thiết (iproute2 cho lệnh ip neigh, curl cho healthcheck)
 RUN apt-get update && apt-get install -y --no-install-recommends \

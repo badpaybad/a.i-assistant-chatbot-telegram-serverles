@@ -934,6 +934,56 @@ class TestLLMProxy(unittest.TestCase):
                 conn.cursor().execute("DELETE FROM llm_audit_log WHERE client_ip = ?", (test_ip,))
                 conn.commit()
 
+    def test_22_max_timeout_and_early_sse_header_flush(self):
+        """Kiểm tra cấu hình max timeout (unlimited read/write) và cơ chế flush sớm HTTP 200 SSE headers tránh lỗi net/http: timeout awaiting response headers"""
+        import asyncio
+        from unittest.mock import patch
+        import httpx
+        import proxy_server
+
+        timeout_cfg = proxy_server.build_upstream_timeout()
+        self.assertIsNone(timeout_cfg.read)
+        self.assertIsNone(timeout_cfg.write)
+        self.assertIsNone(timeout_cfg.pool)
+        self.assertGreaterEqual(timeout_cfg.connect, 60.0)
+
+        class FakeSlowUpstreamResponse:
+            status_code = 200
+            headers = {"content-type": "text/event-stream"}
+
+            async def aiter_bytes(self):
+                yield b'data: {"response":{"candidates":[{"content":{"parts":[{"text":"Hello"}]}}],"usageMetadata":{"promptTokenCount":120,"candidatesTokenCount":35}}}\n\n'
+
+            async def aclose(self):
+                pass
+
+        class FakeSlowClient:
+            is_closed = False
+
+            def build_request(self, method, url, headers=None, content=None):
+                return httpx.Request(method, url)
+
+            async def send(self, req, stream=True):
+                await asyncio.sleep(0.12)
+                return FakeSlowUpstreamResponse()
+
+        old_flush = proxy_server.SSE_HEADER_FLUSH_SEC
+        old_keepalive = proxy_server.SSE_KEEPALIVE_INTERVAL_SEC
+        proxy_server.SSE_HEADER_FLUSH_SEC = 0.03
+        proxy_server.SSE_KEEPALIVE_INTERVAL_SEC = 0.04
+        try:
+            with patch.object(proxy_server, "http_client", FakeSlowClient()):
+                res = self.client.post(
+                    "/google/v1internal:streamGenerateContent?alt=sse",
+                    json={"model": "gemini-4-argon-medium", "request": {"contents": [{"parts": [{"text": "Deep thinking prompt"}]}]}},
+                )
+                self.assertEqual(res.status_code, 200)
+                self.assertIn("text/event-stream", res.headers.get("content-type", ""))
+                self.assertIn("promptTokenCount", res.text)
+        finally:
+            proxy_server.SSE_HEADER_FLUSH_SEC = old_flush
+            proxy_server.SSE_KEEPALIVE_INTERVAL_SEC = old_keepalive
+
 if __name__ == "__main__":
     unittest.main()
 
