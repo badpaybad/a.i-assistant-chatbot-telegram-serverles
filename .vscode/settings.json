@@ -57,5 +57,6 @@
   "dotrush.roslyn.projectOrSolutionFiles": [
     "/work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/backend/Core.Infra.sln"
   ],
-  "peacock.color": "#f9e64f"
+  "peacock.color": "#f9e64f",
+  "ROS2.distro": "noetic"
 }
