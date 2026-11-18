@@ -1,0 +1,10 @@
+# Runtime audit data (chứa IP/MAC/log nội bộ) - không commit
+*.db
+*.db-journal
+data/
+# TLS keys/certs
+*.pem
+*.key
+*.crt
+.env
+__pycache__/
